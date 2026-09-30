@@ -307,7 +307,7 @@ The gaps add to zero. The largest is $6,339, so mix shifts between tier x tenure
 
 ## Headline numbers
 
-These are the only numbers the memo, README and resume bullets may quote. `src/check_docs.py` fails the build if a quoted number is not in this list.
+These are the numbers the memo and README quote. `src/check_docs.py` fails the build if a quoted number is not in this list.
 
 | Key | Value |
 |---|---:|

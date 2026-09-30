@@ -86,8 +86,8 @@ Two alternatives sit on either side of the base case:
 
 In all three, `Q4 = r * Q1`. For the example customer above, Q1 would be $1,111.11 under
 the early step and $1,428.57 under the late step, against $1,250.00 in the base case.
-The brief asked for one alternative. The second one is included because the two together
-bracket the base case from both sides.
+One alternative would be enough to test the assumption. Two are used because together
+they bracket the base case from both sides.
 
 **Portfolio results under each assumption**
 
@@ -130,7 +130,7 @@ The last four columns are each factor's share of the spend change.
 | Scenario A, as observed | The same 10,127 customers are on book in Q1 and Q4. | Isolates behaviour change. The customers effect is zero by construction. |
 | Scenario B, Q4 exit run-rate | The 1,627 customers flagged "Attrited Customer" are on book in Q1 and off book at Q4 end. Their Q4 spend and transactions are removed. | Shows the book the team carries into the next year. It is a run-rate view, not a record of what was billed in Q4. |
 | Q1 book | Every customer is treated as on book in Q1. | The shortest tenure in the file is 13 months, so every customer was on book for the whole 12-month window. |
-| Tenure bands | 13-24, 25-36, 37-48, 49+ months from `Months_on_book`. | Specified in the brief. 2,463 customers have exactly 36 months, which looks like imputation by the data provider and inflates the 25-36 band. |
+| Tenure bands | 13-24, 25-36, 37-48, 49+ months from `Months_on_book`. | Equal 12-month bands. 2,463 customers have exactly 36 months, which looks like imputation by the data provider and inflates the 25-36 band. |
 | Low n | A tier x tenure cell with fewer than 50 customers on the Q1 book is flagged "low n, not interpreted". | 8 of the 15 populated cells are flagged. Platinum has 20 customers and Gold 116, so neither tier supports a conclusion. |
 | Decomposition method | Additive LMDI. Cells with a zero factor use sequential substitution and are flagged. | In the real data the only zero-factor cell is the attrited cohort in scenario B, which has no Q4 customers. |
 | Dropped columns | The two columns starting with `Naive_Bayes_Classifier` are dropped in staging. | They are model outputs left in the public file and leak the attrition label. |

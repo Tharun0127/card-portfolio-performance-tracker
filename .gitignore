@@ -16,3 +16,6 @@ Thumbs.db
 
 # Power BI working files (the .pbix is built by hand from the guide)
 *.pbix.tmp
+
+# Personal notes, kept on this machine only
+private/

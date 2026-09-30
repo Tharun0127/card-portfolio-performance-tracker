@@ -1,8 +1,8 @@
 """Write docs/results.md and outputs/headline_numbers.json from the SQL marts.
 
 docs/results.md holds every table the write-ups refer to.
-outputs/headline_numbers.json is the only place the memo, README and resume bullets are
-allowed to take numbers from. src/check_docs.py enforces that.
+outputs/headline_numbers.json is the place the memo and README take their numbers
+from. src/check_docs.py enforces that.
 """
 from __future__ import annotations
 
@@ -494,7 +494,7 @@ def build_results(t: dict[str, pd.DataFrame], facts: dict[str, str]) -> str:
         f"all compared columns: {facts['sql_vs_python_max_abs_diff']} (tolerance 1e-6)\n")
 
     add("## Headline numbers\n")
-    add("These are the only numbers the memo, README and resume bullets may quote. "
+    add("These are the numbers the memo and README quote. "
         "`src/check_docs.py` fails the build if a quoted number is not in this list.\n")
     add(md_table(pd.DataFrame({"Key": [f"`{k}`" for k in facts], "Value": list(facts.values())}),
                  align_right=["Value"]))

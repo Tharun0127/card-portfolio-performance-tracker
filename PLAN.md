@@ -2,7 +2,7 @@
 
 ## Goal
 
-Answer one business question with a method I can defend in an interview:
+Answer one business question with a method that can be defended line by line:
 
 > Q4 card spend differs from Q1. How much of the change came from customers on book,
 > active rate, transactions per active customer, and average transaction size? Which
@@ -27,17 +27,17 @@ Answer one business question with a method I can defend in an interview:
 
 | Topic | Decision | Why |
 |---|---|---|
-| Base-case quarterly derivation | Linear trend: `Q1 = total / (2 * (1 + r))`, `Q4 = r * Q1` | Specified in the brief. Simple and easy to explain. |
-| Sensitivity | Two alternatives that bracket the base case: "early step" (Q2 = Q3 = Q1) and "late step" (Q2 = Q3 = Q4) | The brief asks for one. The second costs nothing and shows both directions. |
+| Base-case quarterly derivation | Linear trend: `Q1 = total / (2 * (1 + r))`, `Q4 = r * Q1` | Simple, easy to explain, and the only shape that needs no extra parameter. |
+| Sensitivity | Two alternatives that bracket the base case: "early step" (Q2 = Q3 = Q1) and "late step" (Q2 = Q3 = Q4) | One would be enough. The second costs nothing and shows both directions. |
 | Active | A customer is active in a quarter if the quarterly transaction count is above zero. In Q4 that is `Total_Ct_Chng_Q4_Q1 > 0`. | This flag comes straight from the data and does not depend on the quarterly assumption. |
 | Inconsistent rows | If the Q4 count is zero, Q4 spend is set to zero | No transactions means no spend. Affects 2 customers. |
 | Scenario A | Same customers on book in Q1 and Q4 | As observed. |
 | Scenario B | Attrited customers are off book at Q4 end, so their Q4 spend and counts are removed | Q4 exit run-rate. |
-| Segments | `Card_Category` x tenure band (13-24, 25-36, 37-48, 49+) | Specified. |
-| Low n | Any cell under 50 customers is flagged "low n, not interpreted" | Specified. |
-| Decomposition | Additive LMDI, with sequential substitution as the fallback for cells with a zero factor and as a cross-check | Specified. LMDI is exact and does not depend on factor order. |
-| SQL engine | DuckDB, files in `sql/staging`, `sql/intermediate`, `sql/marts` | Specified. |
-| Python version | 3.11 in a local `.venv` | Specified. |
+| Segments | `Card_Category` x tenure band (13-24, 25-36, 37-48, 49+) | Project scope. |
+| Low n | Any cell under 50 customers is flagged "low n, not interpreted" | Project scope. |
+| Decomposition | Additive LMDI, with sequential substitution as the fallback for cells with a zero factor and as a cross-check | LMDI is exact and does not depend on factor order. |
+| SQL engine | DuckDB, files in `sql/staging`, `sql/intermediate`, `sql/marts` | Project scope. |
+| Python version | 3.11 in a local `.venv` | Project scope. |
 
 ## Steps (one git commit each)
 
@@ -57,9 +57,8 @@ Answer one business question with a method I can defend in an interview:
    `ASSUMPTIONS.md` with the derivation and the sensitivity check.
 7. **Power BI.** Star schema CSVs, `measures.dax`, `POWERBI_BUILD_GUIDE.md`.
 8. **Plotly dashboard.** `docs/index.html`, self-contained, 4 pages, scenario switch.
-9. **Write-ups.** `docs/memo.md`, `README.md`, `INTERVIEW_PREP.md`, `RESUME_BULLETS.md`,
-   plus a script that checks every number quoted in the memo and resume bullets against
-   the pipeline outputs.
+9. **Write-ups.** `docs/memo.md` and `README.md`, plus a script that checks every number
+   quoted in them against the pipeline outputs.
 10. **Rebuild from scratch.** Delete build outputs, run `run_all`, confirm tests pass,
     summarise findings and anything not verified.
 
@@ -91,7 +90,7 @@ All ten steps were completed. Differences from the plan above:
 
 - Python 3.11 was not installed on the build machine, so it was added with
   `py install 3.11`. The Kaggle CLI is installed inside `.venv` from `requirements.txt`.
-- The Power BI folder has one table more than the five in the brief:
+- The Power BI folder has one table more than the five planned:
   `dim_bridge_step`, a disconnected helper that supplies the waterfall axis. It also
   has `expected_values.csv` for checking the report, and `theme.json`.
 - The decomposition runs at a fifth grain, attrition status, which feeds the attrition

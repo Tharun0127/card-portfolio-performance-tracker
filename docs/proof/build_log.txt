@@ -1,0 +1,46 @@
+Build log written by run_all.py. Paths are relative to the repository root.
+Timings are removed so the file only changes when the results change.
+
+== Profile the data ==
+Wrote docs/data_profile.md
+
+== Run SQL pipeline (DuckDB) ==
+  built stg_customers                     10,127 rows
+  built int_customer_segments             10,127 rows
+  built int_customer_quarters             60,762 rows
+  built int_customer_quarter_scenario    121,524 rows
+  built mart_cell_quarter                    312 rows
+  built mart_cell_period                     156 rows
+  built mart_decomposition                   156 rows
+  built mart_decomposition_long              624 rows
+  built mart_segment_contribution            150 rows
+  built mart_mix_reconciliation               24 rows
+  built pbi_fact_customer_quarter         38,881 rows
+  built pbi_dim_customer                  10,127 rows
+  built pbi_dim_tier                           4 rows
+  built pbi_dim_tenure                         4 rows
+  built pbi_dim_scenario                       2 rows
+  built pbi_dim_bridge_step                    5 rows
+  built pbi_expected_values                   48 rows
+Exported marts to outputs and star schema to powerbi
+
+== Validate SQL against Python ==
+  SQL vs Python: 156 cells, 27 columns, largest difference 1.05e-08 on effect_txns_per_active (tolerance 1e-06)
+  max_abs_residual_effects_vs_change: 2.515e-08
+  max_abs_gap_segments_vs_portfolio: 2.794e-09
+  max_abs_gap_fact_vs_mart_spend: 0.000e+00
+  linear_q1_plus_q4_over_annual_total: 5.000e-01
+Validation passed
+
+== Write results report ==
+Wrote docs/results.md and outputs/headline_numbers.json
+
+== Build Plotly dashboard ==
+Wrote docs/index.html (4.9 MB)
+
+== Run tests (pytest) ==
+........................................................................ [100%]
+72 passed
+
+== Check numbers quoted in the write-ups ==
+Document check passed: every number quoted in the write-ups is produced by the pipeline

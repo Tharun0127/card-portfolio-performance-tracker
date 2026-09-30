@@ -123,8 +123,8 @@ def test_factors_multiply_back_to_spend():
     assert math.isclose(product(factors), 180000.0, rel_tol=1e-12)
 
 
-def test_worked_example_in_interview_prep():
-    """The numbers quoted in INTERVIEW_PREP.md. If this fails, fix the document."""
+def test_worked_two_period_example():
+    """A hand-checkable example: four factors, two periods, known answers."""
     f0 = (1000, 0.80, 10.0, 50.0)   # spend 400,000
     f1 = (1100, 0.75, 12.0, 45.0)   # spend 445,500
     assert product(f0) == pytest.approx(400_000)
