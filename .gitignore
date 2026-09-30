@@ -1,0 +1,18 @@
+# Raw data is downloaded from Kaggle, never committed
+data/raw/
+
+# Local build artifacts
+build/
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Editor and OS noise
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Power BI working files (the .pbix is built by hand from the guide)
+*.pbix.tmp
