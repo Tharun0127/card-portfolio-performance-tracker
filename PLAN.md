@@ -84,3 +84,17 @@ docs/                index.html (GitHub Pages), memo, data profile, results
   assembled by hand and checked against `docs/results.md`.
 - The dataset is a public teaching dataset. Nothing here says anything about a real
   issuer's portfolio.
+
+## Outcome (added after the build)
+
+All ten steps were completed. Differences from the plan above:
+
+- Python 3.11 was not installed on the build machine, so it was added with
+  `py install 3.11`. The Kaggle CLI is installed inside `.venv` from `requirements.txt`.
+- The Power BI folder has one table more than the five in the brief:
+  `dim_bridge_step`, a disconnected helper that supplies the waterfall axis. It also
+  has `expected_values.csv` for checking the report, and `theme.json`.
+- The decomposition runs at a fifth grain, attrition status, which feeds the attrition
+  page and is the only place the zero-factor fallback is triggered by real data.
+- The final rebuild from an empty folder (no `.venv`, no data, no outputs) reproduced
+  every committed output file exactly.
