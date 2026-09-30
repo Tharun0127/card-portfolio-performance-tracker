@@ -95,3 +95,45 @@ def test_fact_table_grain(pipeline_db):
     assert rows == distinct_rows
     # scenario A: 10,127 x 2. Scenario B: 10,127 in Q1 and 8,500 in Q4.
     assert rows == 10127 * 2 + 10127 + 8500
+
+
+def test_star_schema_reproduces_every_slicer_combination(pipeline_db):
+    """Recompute the decomposition from the Power BI fact table the way the DAX measures do.
+
+    The DAX itself cannot be run here. This test follows the same steps (count rows,
+    sum is_active, sum txn_count, sum spend per quarter, then LMDI with the sequential
+    fallback) on the exported star schema and checks the result against the marts for
+    every tier x tenure x scenario combination a slicer can produce.
+    """
+    from src.decomposition import decompose, factors_from_totals
+
+    fact = pipeline_db.execute("""
+        select s.scenario_code as scenario, t.card_tier, b.tenure_band, f.quarter,
+               f.is_active, f.txn_count, f.spend
+        from pbi_fact_customer_quarter as f
+        inner join pbi_dim_scenario as s using (scenario_key)
+        inner join pbi_dim_tier as t using (tier_key)
+        inner join pbi_dim_tenure as b using (tenure_key)
+    """).df()
+    expected = pipeline_db.execute("select * from pbi_expected_values").df()
+    assert len(expected) == 2 * (1 + 4 + 4 + 15)
+
+    for row in expected.itertuples():
+        rows = fact[fact["scenario"] == row.scenario]
+        if row.tier != "All":
+            rows = rows[rows["card_tier"] == row.tier]
+        if row.tenure != "All":
+            rows = rows[rows["tenure_band"] == row.tenure]
+        totals = {}
+        for quarter in ("Q1", "Q4"):
+            q = rows[rows["quarter"] == quarter]
+            totals[quarter] = (len(q), int(q["is_active"].sum()), q["txn_count"].sum(),
+                               q["spend"].sum())
+        method, effects = decompose(factors_from_totals(*totals["Q1"]),
+                                    factors_from_totals(*totals["Q4"]))
+        assert method == row.decomposition_method
+        assert totals["Q1"][0] == row.customers_q1 and totals["Q4"][0] == row.customers_q4
+        assert totals["Q1"][3] == pytest.approx(row.spend_q1, abs=0.01)
+        assert effects == pytest.approx(
+            [row.effect_customers, row.effect_active_rate, row.effect_txns_per_active,
+             row.effect_avg_ticket], abs=0.01)

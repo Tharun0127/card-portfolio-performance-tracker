@@ -1,0 +1,511 @@
+// =====================================================================================
+// Card Portfolio Performance Tracker: DAX measures
+//
+// How to load these (see POWERBI_BUILD_GUIDE.md, step 4):
+//   Option 1. Open DAX query view in Power BI Desktop, paste this whole file, run it,
+//             then click "Update model with changes". All measures are created at once.
+//   Option 2. Create each measure by hand: New measure, then paste the expression that
+//             follows "MEASURE '_Measures'[Name] =".
+//
+// All measures live in an empty table called _Measures.
+// Format strings cannot be set from here. The table in the build guide lists them.
+//
+// Identity:  spend = customers x active rate x transactions per active x average ticket
+// Periods:   Q1 is the base period, Q4 is the comparison period.
+// Scenario:  exactly one scenario is evaluated at a time. If the slicer has no single
+//            selection, scenario A (as observed) is used.
+// =====================================================================================
+
+DEFINE
+
+    // ---------------------------------------------------------------------------------
+    // 1. Parameters
+    // ---------------------------------------------------------------------------------
+
+    // The scenario being evaluated: 1 = A, as observed. 2 = B, Q4 exit run-rate.
+    // Falls back to 1 when the slicer has zero or several selections, so measures never
+    // add the two scenarios together.
+    MEASURE '_Measures'[Scenario Key] =
+        SELECTEDVALUE ( dim_scenario[scenario_key], 1 )
+
+    // Cells with fewer customers than this on the Q1 book are flagged and not interpreted.
+    MEASURE '_Measures'[Low N Threshold] = 50
+
+    // ---------------------------------------------------------------------------------
+    // 2. Base totals. The fact table only stores on-book rows, so counting rows counts
+    //    customers on book.
+    // ---------------------------------------------------------------------------------
+
+    // Customers on book in Q1.
+    MEASURE '_Measures'[Customers Q1] =
+        VAR s = [Scenario Key]
+        RETURN
+            COALESCE (
+                CALCULATE (
+                    COUNTROWS ( fact_customer_quarter ),
+                    fact_customer_quarter[quarter] = "Q1",
+                    fact_customer_quarter[scenario_key] = s
+                ),
+                0
+            )
+
+    // Customers on book in Q4. In scenario B attrited customers have no Q4 row.
+    MEASURE '_Measures'[Customers Q4] =
+        VAR s = [Scenario Key]
+        RETURN
+            COALESCE (
+                CALCULATE (
+                    COUNTROWS ( fact_customer_quarter ),
+                    fact_customer_quarter[quarter] = "Q4",
+                    fact_customer_quarter[scenario_key] = s
+                ),
+                0
+            )
+
+    // On-book customers with at least one transaction in Q1.
+    MEASURE '_Measures'[Active Customers Q1] =
+        VAR s = [Scenario Key]
+        RETURN
+            COALESCE (
+                CALCULATE (
+                    SUM ( fact_customer_quarter[is_active] ),
+                    fact_customer_quarter[quarter] = "Q1",
+                    fact_customer_quarter[scenario_key] = s
+                ),
+                0
+            )
+
+    // On-book customers with at least one transaction in Q4.
+    MEASURE '_Measures'[Active Customers Q4] =
+        VAR s = [Scenario Key]
+        RETURN
+            COALESCE (
+                CALCULATE (
+                    SUM ( fact_customer_quarter[is_active] ),
+                    fact_customer_quarter[quarter] = "Q4",
+                    fact_customer_quarter[scenario_key] = s
+                ),
+                0
+            )
+
+    // Derived Q1 transaction count (an estimate, not a whole number).
+    MEASURE '_Measures'[Txns Q1] =
+        VAR s = [Scenario Key]
+        RETURN
+            COALESCE (
+                CALCULATE (
+                    SUM ( fact_customer_quarter[txn_count] ),
+                    fact_customer_quarter[quarter] = "Q1",
+                    fact_customer_quarter[scenario_key] = s
+                ),
+                0
+            )
+
+    // Derived Q4 transaction count.
+    MEASURE '_Measures'[Txns Q4] =
+        VAR s = [Scenario Key]
+        RETURN
+            COALESCE (
+                CALCULATE (
+                    SUM ( fact_customer_quarter[txn_count] ),
+                    fact_customer_quarter[quarter] = "Q4",
+                    fact_customer_quarter[scenario_key] = s
+                ),
+                0
+            )
+
+    // Derived Q1 spend in dollars.
+    MEASURE '_Measures'[Spend Q1] =
+        VAR s = [Scenario Key]
+        RETURN
+            COALESCE (
+                CALCULATE (
+                    SUM ( fact_customer_quarter[spend] ),
+                    fact_customer_quarter[quarter] = "Q1",
+                    fact_customer_quarter[scenario_key] = s
+                ),
+                0
+            )
+
+    // Derived Q4 spend in dollars.
+    MEASURE '_Measures'[Spend Q4] =
+        VAR s = [Scenario Key]
+        RETURN
+            COALESCE (
+                CALCULATE (
+                    SUM ( fact_customer_quarter[spend] ),
+                    fact_customer_quarter[quarter] = "Q4",
+                    fact_customer_quarter[scenario_key] = s
+                ),
+                0
+            )
+
+    // ---------------------------------------------------------------------------------
+    // 3. The four factors. A ratio with a zero denominator is 0, the same rule as the SQL.
+    // ---------------------------------------------------------------------------------
+
+    // Share of on-book customers who transacted in Q1.
+    MEASURE '_Measures'[Active Rate Q1] =
+        COALESCE ( DIVIDE ( [Active Customers Q1], [Customers Q1] ), 0 )
+
+    // Share of on-book customers who transacted in Q4.
+    MEASURE '_Measures'[Active Rate Q4] =
+        COALESCE ( DIVIDE ( [Active Customers Q4], [Customers Q4] ), 0 )
+
+    // Transactions per active customer in Q1 (frequency).
+    MEASURE '_Measures'[Txns per Active Q1] =
+        COALESCE ( DIVIDE ( [Txns Q1], [Active Customers Q1] ), 0 )
+
+    // Transactions per active customer in Q4.
+    MEASURE '_Measures'[Txns per Active Q4] =
+        COALESCE ( DIVIDE ( [Txns Q4], [Active Customers Q4] ), 0 )
+
+    // Average transaction size in Q1.
+    MEASURE '_Measures'[Avg Ticket Q1] =
+        COALESCE ( DIVIDE ( [Spend Q1], [Txns Q1] ), 0 )
+
+    // Average transaction size in Q4.
+    MEASURE '_Measures'[Avg Ticket Q4] =
+        COALESCE ( DIVIDE ( [Spend Q4], [Txns Q4] ), 0 )
+
+    // ---------------------------------------------------------------------------------
+    // 4. Change measures
+    // ---------------------------------------------------------------------------------
+
+    // Q4 spend minus Q1 spend. This is the amount the four effects must add up to.
+    MEASURE '_Measures'[Spend Change] = [Spend Q4] - [Spend Q1]
+
+    // Spend change as a share of Q1 spend. Blank when there is no Q1 spend.
+    MEASURE '_Measures'[Spend Change %] = DIVIDE ( [Spend Change], [Spend Q1] )
+
+    // Change in customers on book, as a share of the Q1 book.
+    MEASURE '_Measures'[Customers Change %] =
+        DIVIDE ( [Customers Q4] - [Customers Q1], [Customers Q1] )
+
+    // Change in active rate in percentage points (as a fraction, format as 0.00%).
+    MEASURE '_Measures'[Active Rate Change pts] = [Active Rate Q4] - [Active Rate Q1]
+
+    // Relative change in transactions per active customer.
+    MEASURE '_Measures'[Txns per Active Change %] =
+        DIVIDE ( [Txns per Active Q4] - [Txns per Active Q1], [Txns per Active Q1] )
+
+    // Relative change in average ticket.
+    MEASURE '_Measures'[Avg Ticket Change %] =
+        DIVIDE ( [Avg Ticket Q4] - [Avg Ticket Q1], [Avg Ticket Q1] )
+
+    // ---------------------------------------------------------------------------------
+    // 5. LMDI decomposition
+    //    effect_x = L(Spend Q4, Spend Q1) * LN( x_Q4 / x_Q1 )
+    //    L(a, b)  = (a - b) / (LN a - LN b), and L(a, a) = a
+    //    If any factor is zero in either quarter, LMDI is undefined and the measures fall
+    //    back to sequential substitution in the order customers, active rate,
+    //    transactions per active, average ticket.
+    // ---------------------------------------------------------------------------------
+
+    // TRUE when all eight factor values are positive, so LMDI can be used.
+    MEASURE '_Measures'[LMDI Applicable] =
+        MINX (
+            {
+                [Customers Q1], [Customers Q4],
+                [Active Rate Q1], [Active Rate Q4],
+                [Txns per Active Q1], [Txns per Active Q4],
+                [Avg Ticket Q1], [Avg Ticket Q4]
+            },
+            [Value]
+        ) > 0
+
+    // Logarithmic mean of Q4 and Q1 spend: the common weight applied to every factor.
+    MEASURE '_Measures'[Log Mean Spend] =
+        VAR s0 = [Spend Q1]
+        VAR s1 = [Spend Q4]
+        RETURN
+            IF (
+                [LMDI Applicable],
+                IF ( s1 = s0, s0, DIVIDE ( s1 - s0, LN ( s1 ) - LN ( s0 ) ) )
+            )
+
+    // Spend change caused by the change in customers on book.
+    MEASURE '_Measures'[Effect Customers] =
+        VAR n0 = [Customers Q1]
+        VAR n1 = [Customers Q4]
+        RETURN
+            IF (
+                [LMDI Applicable],
+                [Log Mean Spend] * LN ( DIVIDE ( n1, n0 ) ),
+                ( n1 - n0 ) * [Active Rate Q1] * [Txns per Active Q1] * [Avg Ticket Q1]
+            )
+
+    // Spend change caused by the change in active rate.
+    MEASURE '_Measures'[Effect Active Rate] =
+        VAR a0 = [Active Rate Q1]
+        VAR a1 = [Active Rate Q4]
+        RETURN
+            IF (
+                [LMDI Applicable],
+                [Log Mean Spend] * LN ( DIVIDE ( a1, a0 ) ),
+                [Customers Q4] * ( a1 - a0 ) * [Txns per Active Q1] * [Avg Ticket Q1]
+            )
+
+    // Spend change caused by the change in transactions per active customer.
+    MEASURE '_Measures'[Effect Txns per Active] =
+        VAR t0 = [Txns per Active Q1]
+        VAR t1 = [Txns per Active Q4]
+        RETURN
+            IF (
+                [LMDI Applicable],
+                [Log Mean Spend] * LN ( DIVIDE ( t1, t0 ) ),
+                [Customers Q4] * [Active Rate Q4] * ( t1 - t0 ) * [Avg Ticket Q1]
+            )
+
+    // Spend change caused by the change in average ticket.
+    MEASURE '_Measures'[Effect Avg Ticket] =
+        VAR k0 = [Avg Ticket Q1]
+        VAR k1 = [Avg Ticket Q4]
+        RETURN
+            IF (
+                [LMDI Applicable],
+                [Log Mean Spend] * LN ( DIVIDE ( k1, k0 ) ),
+                [Customers Q4] * [Active Rate Q4] * [Txns per Active Q4] * ( k1 - k0 )
+            )
+
+    // Sum of the four effects minus the spend change. Should show 0 everywhere.
+    // Put it on a card while building the report, then remove it.
+    MEASURE '_Measures'[Effect Check] =
+        [Effect Customers] + [Effect Active Rate] + [Effect Txns per Active]
+            + [Effect Avg Ticket] - [Spend Change]
+
+    // Which method produced the effects in the current selection.
+    MEASURE '_Measures'[Decomposition Method] =
+        IF ( [LMDI Applicable], "LMDI", "Sequential fallback (a factor is zero)" )
+
+    // Each effect as a share of the spend change. Above 100% means another factor
+    // pulled the other way.
+    MEASURE '_Measures'[Share Customers] = DIVIDE ( [Effect Customers], [Spend Change] )
+    MEASURE '_Measures'[Share Active Rate] = DIVIDE ( [Effect Active Rate], [Spend Change] )
+    MEASURE '_Measures'[Share Txns per Active] = DIVIDE ( [Effect Txns per Active], [Spend Change] )
+    MEASURE '_Measures'[Share Avg Ticket] = DIVIDE ( [Effect Avg Ticket], [Spend Change] )
+
+    // ---------------------------------------------------------------------------------
+    // 6. Waterfall
+    // ---------------------------------------------------------------------------------
+
+    // Value for the waterfall. dim_bridge_step is a disconnected table that supplies the
+    // axis categories. With no single step in context (the visual's total column) the
+    // measure returns Q4 spend, which is also what the five steps add up to.
+    MEASURE '_Measures'[Bridge Value] =
+        SWITCH (
+            SELECTEDVALUE ( dim_bridge_step[step_key] ),
+            1, [Spend Q1],
+            2, [Effect Customers],
+            3, [Effect Active Rate],
+            4, [Effect Txns per Active],
+            5, [Effect Avg Ticket],
+            [Spend Q4]
+        )
+
+    // ---------------------------------------------------------------------------------
+    // 7. Dominant driver and low-n handling
+    // ---------------------------------------------------------------------------------
+
+    // The effect with the largest absolute size. Ties resolve in the order customers,
+    // transactions per active, average ticket, active rate (same as the SQL).
+    MEASURE '_Measures'[Dominant Driver] =
+        VAR e1 = ABS ( [Effect Customers] )
+        VAR e2 = ABS ( [Effect Active Rate] )
+        VAR e3 = ABS ( [Effect Txns per Active] )
+        VAR e4 = ABS ( [Effect Avg Ticket] )
+        VAR m = MAX ( MAX ( e1, e2 ), MAX ( e3, e4 ) )
+        RETURN
+            SWITCH (
+                TRUE (),
+                m = 0, "None",
+                m = e1, "Customers on book",
+                m = e3, "Transactions per active",
+                m = e4, "Average ticket",
+                "Active rate"
+            )
+
+    // Dollar value of the dominant effect, used in the dynamic titles.
+    MEASURE '_Measures'[Dominant Effect] =
+        SWITCH (
+            [Dominant Driver],
+            "Customers on book", [Effect Customers],
+            "Transactions per active", [Effect Txns per Active],
+            "Average ticket", [Effect Avg Ticket],
+            "Active rate", [Effect Active Rate],
+            0
+        )
+
+    // TRUE when the current selection has customers but fewer than the threshold.
+    MEASURE '_Measures'[Is Low N] =
+        [Customers Q1] > 0 && [Customers Q1] < [Low N Threshold]
+
+    // Text flag for tables and tooltips.
+    MEASURE '_Measures'[Sample Flag] =
+        SWITCH (
+            TRUE (),
+            [Customers Q1] = 0, "No customers",
+            [Is Low N], "Low n, not interpreted",
+            "OK"
+        )
+
+    // Number that drives the heatmap colour. Blank for low-n and empty cells so they
+    // take the default grey instead of a colour.
+    MEASURE '_Measures'[Heatmap Value] =
+        IF ( [Customers Q1] >= [Low N Threshold], [Spend Change %] )
+
+    // Text shown in each heatmap cell: % change and dominant driver, or the low-n flag.
+    MEASURE '_Measures'[Heatmap Label] =
+        SWITCH (
+            TRUE (),
+            [Customers Q1] = 0, "no customers",
+            [Is Low N], "low n (n=" & [Customers Q1] & ")",
+            FORMAT ( [Spend Change %], "+0.0%;-0.0%;0.0%" ) & " | " & [Dominant Driver]
+        )
+
+    // ---------------------------------------------------------------------------------
+    // 8. Segment contribution. ALLSELECTED() removes the grouping of the visual itself
+    //    but keeps the slicers, so the denominator is the total of what is selected.
+    // ---------------------------------------------------------------------------------
+
+    // Share of the selected portfolio's spend change that this segment explains.
+    MEASURE '_Measures'[Share of Portfolio Change] =
+        DIVIDE ( [Spend Change], CALCULATE ( [Spend Change], ALLSELECTED () ) )
+
+    // Share of the selected portfolio's Q1 spend that this segment holds.
+    MEASURE '_Measures'[Share of Q1 Spend] =
+        DIVIDE ( [Spend Q1], CALCULATE ( [Spend Q1], ALLSELECTED () ) )
+
+    // Share of the selected portfolio's Q1 customers in this segment.
+    MEASURE '_Measures'[Share of Q1 Customers] =
+        DIVIDE ( [Customers Q1], CALCULATE ( [Customers Q1], ALLSELECTED () ) )
+
+    // Above 1: the segment explains more of the change than its size suggests.
+    MEASURE '_Measures'[Over Index] =
+        DIVIDE ( [Share of Portfolio Change], [Share of Q1 Spend] )
+
+    // Segment change as a share of portfolio Q1 spend. Adds up to the portfolio % change.
+    MEASURE '_Measures'[Contribution pts] =
+        DIVIDE ( [Spend Change], CALCULATE ( [Spend Q1], ALLSELECTED () ) )
+
+    // ---------------------------------------------------------------------------------
+    // 9. Attrition lens
+    // ---------------------------------------------------------------------------------
+
+    // Spend per customer on book.
+    MEASURE '_Measures'[Spend per Customer Q1] = DIVIDE ( [Spend Q1], [Customers Q1] )
+    MEASURE '_Measures'[Spend per Customer Q4] = DIVIDE ( [Spend Q4], [Customers Q4] )
+    MEASURE '_Measures'[Spend per Customer Change %] =
+        DIVIDE ( [Spend per Customer Q4] - [Spend per Customer Q1], [Spend per Customer Q1] )
+
+    // Transactions per customer on book.
+    MEASURE '_Measures'[Txns per Customer Q1] = DIVIDE ( [Txns Q1], [Customers Q1] )
+    MEASURE '_Measures'[Txns per Customer Q4] = DIVIDE ( [Txns Q4], [Customers Q4] )
+    MEASURE '_Measures'[Txns per Customer Change %] =
+        DIVIDE ( [Txns per Customer Q4] - [Txns per Customer Q1], [Txns per Customer Q1] )
+
+    // Customers on the Q1 book who are flagged as attrited.
+    MEASURE '_Measures'[Attrited Customers] =
+        CALCULATE ( [Customers Q1], dim_customer[attrition_flag] = "Attrited Customer" )
+
+    // Attrited customers as a share of the Q1 book.
+    MEASURE '_Measures'[Attrition Rate] = DIVIDE ( [Attrited Customers], [Customers Q1] )
+
+    // Q1 spend of attrited customers as a share of all Q1 spend.
+    MEASURE '_Measures'[Attrited Share of Q1 Spend] =
+        DIVIDE (
+            CALCULATE ( [Spend Q1], dim_customer[attrition_flag] = "Attrited Customer" ),
+            [Spend Q1]
+        )
+
+    // Q4 spend of attrited customers as observed (scenario A): the spend that leaves
+    // with them. Scenario is forced to A whatever the slicer says.
+    MEASURE '_Measures'[Attrited Q4 Spend As Observed] =
+        CALCULATE (
+            [Spend Q4],
+            REMOVEFILTERS ( dim_scenario ),
+            dim_scenario[scenario_key] = 1,
+            dim_customer[attrition_flag] = "Attrited Customer"
+        )
+
+    // Spend change under scenario B whatever the slicer says. Split by attrition flag
+    // this gives the cohort view: what stayers did, and what leavers took with them.
+    MEASURE '_Measures'[Spend Change Exit Run-Rate] =
+        CALCULATE (
+            [Spend Change],
+            REMOVEFILTERS ( dim_scenario ),
+            dim_scenario[scenario_key] = 2
+        )
+
+    // Spend change % under scenario B whatever the slicer says.
+    MEASURE '_Measures'[Spend Change % Exit Run-Rate] =
+        CALCULATE (
+            [Spend Change %],
+            REMOVEFILTERS ( dim_scenario ),
+            dim_scenario[scenario_key] = 2
+        )
+
+    // ---------------------------------------------------------------------------------
+    // 10. Dynamic titles. Each chart title states the takeaway for the current selection.
+    //     Bind them with Format > Title > fx > Field value.
+    // ---------------------------------------------------------------------------------
+
+    // Page 1 headline.
+    MEASURE '_Measures'[Title KPI] =
+        VAR chg = [Spend Change %]
+        RETURN
+            "Q4 spend " & IF ( chg < 0, "fell ", "rose " )
+                & FORMAT ( ABS ( chg ), "0.0%" ) & " against Q1, from "
+                & FORMAT ( [Spend Q1] / 1000000, "$0.00" ) & "M to "
+                & FORMAT ( [Spend Q4] / 1000000, "$0.00" ) & "M"
+
+    // Page 2 waterfall title.
+    MEASURE '_Measures'[Title Bridge] =
+        VAR chg = [Spend Change %]
+        VAR n = [Customers Q1]
+        RETURN
+            SWITCH (
+                TRUE (),
+                n = 0, "No customers in this selection",
+                [Is Low N], "Low n (" & n & " customers), not interpreted",
+                "Spend " & IF ( chg < 0, "fell ", "rose " ) & FORMAT ( ABS ( chg ), "0.0%" )
+                    & ": " & LOWER ( [Dominant Driver] ) & " explains "
+                    & FORMAT ( DIVIDE ( [Dominant Effect], [Spend Change] ), "0%" )
+                    & " of the change"
+            )
+
+    // Page 3 heatmap title. Counts the interpretable cells and their range.
+    MEASURE '_Measures'[Title Heatmap] =
+        VAR cells =
+            FILTER (
+                ADDCOLUMNS (
+                    CROSSJOIN ( VALUES ( dim_tier[card_tier] ), VALUES ( dim_tenure[tenure_band] ) ),
+                    "@n", [Customers Q1],
+                    "@chg", [Spend Change %]
+                ),
+                [@n] >= [Low N Threshold]
+            )
+        RETURN
+            COUNTROWS ( cells ) & " interpretable cells changed between "
+                & FORMAT ( MINX ( cells, [@chg] ), "0.0%" ) & " and "
+                & FORMAT ( MAXX ( cells, [@chg] ), "0.0%" )
+
+    // Page 4 title.
+    MEASURE '_Measures'[Title Attrition] =
+        "Attrited customers are " & FORMAT ( [Attrition Rate], "0.0%" )
+            & " of the book and " & FORMAT ( [Attrited Share of Q1 Spend], "0.0%" )
+            & " of Q1 spend"
+
+// Running this query returns the headline numbers for scenario A.
+// Compare them with the first row of expected_values.csv.
+EVALUATE
+    ROW (
+        "Spend Q1", [Spend Q1],
+        "Spend Q4", [Spend Q4],
+        "Spend Change %", [Spend Change %],
+        "Effect Customers", [Effect Customers],
+        "Effect Active Rate", [Effect Active Rate],
+        "Effect Txns per Active", [Effect Txns per Active],
+        "Effect Avg Ticket", [Effect Avg Ticket],
+        "Effect Check", [Effect Check]
+    )

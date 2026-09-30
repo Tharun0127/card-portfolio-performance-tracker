@@ -32,6 +32,7 @@ MODELS = [
     "marts/pbi_dim_tenure",
     "marts/pbi_dim_scenario",
     "marts/pbi_dim_bridge_step",
+    "marts/pbi_expected_values",
 ]
 
 ANALYSIS_EXPORTS = [
@@ -49,6 +50,7 @@ POWERBI_EXPORTS = {
     "pbi_dim_tenure": "dim_tenure",
     "pbi_dim_scenario": "dim_scenario",
     "pbi_dim_bridge_step": "dim_bridge_step",
+    "pbi_expected_values": "expected_values",
 }
 
 
