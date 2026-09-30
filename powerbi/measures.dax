@@ -1,14 +1,13 @@
 // =====================================================================================
 // Card Portfolio Performance Tracker: DAX measures
 //
-// How to load these (see POWERBI_BUILD_GUIDE.md, step 4):
-//   Option 1. Open DAX query view in Power BI Desktop, paste this whole file, run it,
-//             then click "Update model with changes". All measures are created at once.
-//   Option 2. Create each measure by hand: New measure, then paste the expression that
-//             follows "MEASURE '_Measures'[Name] =".
+// This file is the single source for the measures. src/build_powerbi_project.py reads
+// it and writes each measure, with its comment as the description, into the Power BI
+// project in powerbi/report. It is also a valid DAX query: paste it into DAX query view
+// in Power BI Desktop and run it to see the headline numbers.
 //
 // All measures live in an empty table called _Measures.
-// Format strings cannot be set from here. The table in the build guide lists them.
+// Format strings are set by the generator.
 //
 // Identity:  spend = customers x active rate x transactions per active x average ticket
 // Periods:   Q1 is the base period, Q4 is the comparison period.
@@ -360,8 +359,41 @@ DEFINE
             TRUE (),
             [Customers Q1] = 0, "no customers",
             [Is Low N], "low n (n=" & [Customers Q1] & ")",
-            FORMAT ( [Spend Change %], "+0.0%;-0.0%;0.0%" ) & " | " & [Dominant Driver]
+            FORMAT ( [Spend Change %], "+0.0%;-0.0%;0.0%" ) & UNICHAR ( 10 ) & [Dominant Driver]
         )
+
+    // Background colour of a heatmap cell, as a hex code. The scale is fixed in steps of
+    // ten points of decline (0% to 40%) so small differences are not exaggerated.
+    // Low-n cells are grey. Increases are shown in orange.
+    MEASURE '_Measures'[Heatmap Colour] =
+        VAR chg = [Heatmap Value]
+        RETURN
+            SWITCH (
+                TRUE (),
+                [Customers Q1] = 0, "#fcfcfb",
+                ISBLANK ( chg ), "#e1e0d9",
+                chg > 0, "#eb6834",
+                chg > -0.10, "#cde2fb",
+                chg > -0.20, "#86b6ef",
+                chg > -0.30, "#3987e5",
+                chg > -0.40, "#1c5cab",
+                "#0d366b"
+            )
+
+    // Text colour that stays readable on the heatmap background.
+    MEASURE '_Measures'[Heatmap Font Colour] =
+        VAR chg = [Heatmap Value]
+        RETURN
+            SWITCH (
+                TRUE (),
+                ISBLANK ( chg ), "#52514e",
+                chg > -0.20, "#0b0b0b",
+                "#ffffff"
+            )
+
+    // Bar colour for segment charts: grey when the segment is low n, blue otherwise.
+    MEASURE '_Measures'[Bar Colour] =
+        IF ( [Is Low N], "#c3c2b7", "#2a78d6" )
 
     // ---------------------------------------------------------------------------------
     // 8. Segment contribution. ALLSELECTED() removes the grouping of the visual itself
@@ -476,7 +508,7 @@ DEFINE
 
     // Page 3 heatmap title. Counts the interpretable cells and their range.
     MEASURE '_Measures'[Title Heatmap] =
-        VAR cells =
+        VAR cellTable =
             FILTER (
                 ADDCOLUMNS (
                     CROSSJOIN ( VALUES ( dim_tier[card_tier] ), VALUES ( dim_tenure[tenure_band] ) ),
@@ -486,9 +518,60 @@ DEFINE
                 [@n] >= [Low N Threshold]
             )
         RETURN
-            COUNTROWS ( cells ) & " interpretable cells changed between "
-                & FORMAT ( MINX ( cells, [@chg] ), "0.0%" ) & " and "
-                & FORMAT ( MAXX ( cells, [@chg] ), "0.0%" )
+            COUNTROWS ( cellTable ) & " interpretable cells changed between "
+                & FORMAT ( MINX ( cellTable, [@chg] ), "0.0%" ) & " and "
+                & FORMAT ( MAXX ( cellTable, [@chg] ), "0.0%" )
+
+    // Page 1 tier chart title: the range of spend change across tiers with enough customers.
+    MEASURE '_Measures'[Title Tier] =
+        VAR t =
+            FILTER (
+                ADDCOLUMNS ( VALUES ( dim_tier[card_tier] ), "@n", [Customers Q1], "@chg", [Spend Change %] ),
+                [@n] >= [Low N Threshold]
+            )
+        RETURN
+            "Tiers with enough customers changed between "
+                & FORMAT ( MINX ( t, [@chg] ), "0.0%" ) & " and "
+                & FORMAT ( MAXX ( t, [@chg] ), "0.0%" ) & " (grey = low n)"
+
+    // Page 1 tenure chart title: the range of spend change across tenure bands.
+    MEASURE '_Measures'[Title Tenure] =
+        VAR t =
+            ADDCOLUMNS ( VALUES ( dim_tenure[tenure_band] ), "@chg", [Spend Change %] )
+        RETURN
+            "Every tenure band changed between "
+                & FORMAT ( MINX ( t, [@chg] ), "0.0%" ) & " and "
+                & FORMAT ( MAXX ( t, [@chg] ), "0.0%" )
+
+    // Page 3 contribution chart title: how far any interpretable cell is from its size.
+    MEASURE '_Measures'[Title Contribution] =
+        VAR cellTable =
+            FILTER (
+                ADDCOLUMNS (
+                    VALUES ( dim_customer[tier_tenure_cell] ),
+                    "@n", [Customers Q1],
+                    "@oi", [Over Index]
+                ),
+                [@n] >= [Low N Threshold]
+            )
+        RETURN
+            "The change follows segment size: over-index between "
+                & FORMAT ( MINX ( cellTable, [@oi] ), "0.00" ) & " and "
+                & FORMAT ( MAXX ( cellTable, [@oi] ), "0.00" ) & " for interpretable cells"
+
+    // Page 4 cohort waterfall title.
+    MEASURE '_Measures'[Title Cohort] =
+        "Exit run-rate change of "
+            & FORMAT ( CALCULATE ( [Spend Change Exit Run-Rate], REMOVEFILTERS ( dim_customer ) ) / 1000000, "$0.00" )
+            & "M by cohort: customers who stayed and customers who left"
+
+    // Page 4 attrition rate chart title.
+    MEASURE '_Measures'[Title Attrition Rate] =
+        VAR t = ADDCOLUMNS ( VALUES ( dim_tenure[tenure_band] ), "@r", [Attrition Rate] )
+        RETURN
+            "Attrition is spread evenly across tenure bands, from "
+                & FORMAT ( MINX ( t, [@r] ), "0.0%" ) & " to "
+                & FORMAT ( MAXX ( t, [@r] ), "0.0%" )
 
     // Page 4 title.
     MEASURE '_Measures'[Title Attrition] =

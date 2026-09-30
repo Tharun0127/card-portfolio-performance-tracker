@@ -1,0 +1,60 @@
+table dim_tenure
+	lineageTag: 120f8057-736e-522f-8e4a-dd6acd53ca7e
+
+	column tenure_key
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 13d1411b-3d47-5cb4-8d5e-2156c175e5a1
+		summarizeBy: none
+		sourceColumn: tenure_key
+
+		annotation SummarizationSetBy = User
+
+	column tenure_band
+		dataType: string
+		lineageTag: ac8c653e-914e-5782-bf62-5c4d6dc3c145
+		summarizeBy: none
+		sourceColumn: tenure_band
+		sortByColumn: tenure_key
+
+		annotation SummarizationSetBy = User
+
+	column min_months_on_book
+		dataType: int64
+		formatString: 0
+		lineageTag: 6095d29f-7306-50e9-b604-b05dd848e632
+		summarizeBy: none
+		sourceColumn: min_months_on_book
+
+		annotation SummarizationSetBy = User
+
+	column max_months_on_book
+		dataType: int64
+		formatString: 0
+		lineageTag: 58ef6fcc-32c8-54b6-95b6-8a04fd341f81
+		summarizeBy: none
+		sourceColumn: max_months_on_book
+
+		annotation SummarizationSetBy = User
+
+	column customers
+		dataType: int64
+		formatString: 0
+		lineageTag: 1fc63ee4-8aba-5896-9220-4d6c72dfdb01
+		summarizeBy: none
+		sourceColumn: customers
+
+		annotation SummarizationSetBy = User
+
+	partition dim_tenure = m
+		mode: import
+		source =
+				let
+				    Source = Csv.Document(File.Contents(DataFolder & "dim_tenure.csv"), [Delimiter = ",", Columns = 5, Encoding = 65001, QuoteStyle = QuoteStyle.Csv]),
+				    Promoted = Table.PromoteHeaders(Source, [PromoteAllScalars = true]),
+				    Typed = Table.TransformColumnTypes(Promoted, {{"tenure_key", Int64.Type}, {"tenure_band", type text}, {"min_months_on_book", Int64.Type}, {"max_months_on_book", Int64.Type}, {"customers", Int64.Type}}, "en-US")
+				in
+				    Typed
+
+	annotation PBI_ResultType = Table

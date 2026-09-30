@@ -1,0 +1,50 @@
+table dim_tier
+	lineageTag: d9e22824-3906-580d-9de9-b7b85ca8cc20
+
+	column tier_key
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: f24d9faf-e707-5c1d-b755-496657148fb0
+		summarizeBy: none
+		sourceColumn: tier_key
+
+		annotation SummarizationSetBy = User
+
+	column card_tier
+		dataType: string
+		lineageTag: a9558996-6caa-5400-bdfc-999881906cb1
+		summarizeBy: none
+		sourceColumn: card_tier
+		sortByColumn: tier_key
+
+		annotation SummarizationSetBy = User
+
+	column customers
+		dataType: int64
+		formatString: 0
+		lineageTag: 5a211826-d9fd-5d79-9c8c-1cc3ffb4db53
+		summarizeBy: none
+		sourceColumn: customers
+
+		annotation SummarizationSetBy = User
+
+	column sample_note
+		dataType: string
+		lineageTag: 3280f20c-9ed7-54b0-99c6-f065bebe223a
+		summarizeBy: none
+		sourceColumn: sample_note
+
+		annotation SummarizationSetBy = User
+
+	partition dim_tier = m
+		mode: import
+		source =
+				let
+				    Source = Csv.Document(File.Contents(DataFolder & "dim_tier.csv"), [Delimiter = ",", Columns = 4, Encoding = 65001, QuoteStyle = QuoteStyle.Csv]),
+				    Promoted = Table.PromoteHeaders(Source, [PromoteAllScalars = true]),
+				    Typed = Table.TransformColumnTypes(Promoted, {{"tier_key", Int64.Type}, {"card_tier", type text}, {"customers", Int64.Type}, {"sample_note", type text}}, "en-US")
+				in
+				    Typed
+
+	annotation PBI_ResultType = Table

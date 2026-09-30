@@ -1,0 +1,11 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "SemanticModel",
+    "displayName": "CardPortfolioTracker"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "567e7380-05ab-520e-965f-719151494626"
+  }
+}

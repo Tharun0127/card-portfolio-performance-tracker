@@ -1,0 +1,5 @@
+/// Folder that holds the star schema CSV files. Change this if the repository moves.
+expression DataFolder = "C:\AIML\Card Portfolio Performance Tracker\powerbi\" meta [IsParameterQuery = true, Type = "Text", IsParameterQueryRequired = true]
+	lineageTag: 091bbe87-ecf7-5de6-9fe6-eb8731551b3d
+
+	annotation PBI_ResultType = Text

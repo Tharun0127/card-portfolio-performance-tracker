@@ -1,0 +1,15 @@
+relationship 04abdc1f-5eb4-546f-bc67-d53e4226a804
+	fromColumn: fact_customer_quarter.customer_id
+	toColumn: dim_customer.customer_id
+
+relationship 0760388f-505b-5a36-aa59-ce5a73cbaa91
+	fromColumn: fact_customer_quarter.tier_key
+	toColumn: dim_tier.tier_key
+
+relationship d90735cd-5cf4-5117-984e-18404c42d5fd
+	fromColumn: fact_customer_quarter.tenure_key
+	toColumn: dim_tenure.tenure_key
+
+relationship e4427bbe-3d5c-59d5-89ab-f0f758afa8a2
+	fromColumn: fact_customer_quarter.scenario_key
+	toColumn: dim_scenario.scenario_key

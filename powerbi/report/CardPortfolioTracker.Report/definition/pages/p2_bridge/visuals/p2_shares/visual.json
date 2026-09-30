@@ -1,0 +1,150 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.0.0/schema.json",
+  "name": "p2_shares",
+  "position": {
+    "x": 840,
+    "y": 400,
+    "z": 9000,
+    "height": 274,
+    "width": 420,
+    "tabOrder": 9000
+  },
+  "visual": {
+    "visualType": "multiRowCard",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Share Customers"
+                }
+              },
+              "queryRef": "_Measures.Share Customers",
+              "nativeQueryRef": "Share Customers",
+              "displayName": "Customers on book"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Share Active Rate"
+                }
+              },
+              "queryRef": "_Measures.Share Active Rate",
+              "nativeQueryRef": "Share Active Rate",
+              "displayName": "Active rate"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Share Txns per Active"
+                }
+              },
+              "queryRef": "_Measures.Share Txns per Active",
+              "nativeQueryRef": "Share Txns per Active",
+              "displayName": "Transactions per active"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Share Avg Ticket"
+                }
+              },
+              "queryRef": "_Measures.Share Avg Ticket",
+              "nativeQueryRef": "Share Avg Ticket",
+              "displayName": "Average ticket"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Customers Q1"
+                }
+              },
+              "queryRef": "_Measures.Customers Q1",
+              "nativeQueryRef": "Customers Q1",
+              "displayName": "Customers on book, Q1"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Customers Q4"
+                }
+              },
+              "queryRef": "_Measures.Customers Q4",
+              "nativeQueryRef": "Customers Q4",
+              "displayName": "Customers on book, Q4"
+            }
+          ]
+        }
+      }
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Share of the spend change by factor'"
+                }
+              }
+            },
+            "titleWrap": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "fontSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "11.0D"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

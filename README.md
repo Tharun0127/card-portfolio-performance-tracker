@@ -8,7 +8,7 @@
 
 ![Spend bridge from Q1 to Q4: transaction frequency removes $3.92M and average ticket adds back $0.75M](docs/img/page2_bridge.png)
 
-**[Live dashboard](https://tharun0127.github.io/card-portfolio-performance-tracker/)** · [One-page memo](docs/memo.md) · [All result tables](docs/results.md) · [Assumptions and sensitivity](ASSUMPTIONS.md) · [Power BI build kit](powerbi/POWERBI_BUILD_GUIDE.md)
+**[Live dashboard](https://tharun0127.github.io/card-portfolio-performance-tracker/)** · [One-page memo](docs/memo.md) · [All result tables](docs/results.md) · [Assumptions and sensitivity](ASSUMPTIONS.md) · [Power BI report](powerbi/POWERBI_BUILD_GUIDE.md)
 
 ![Python 3.11](https://img.shields.io/badge/Python-3.11-3776AB) ![DuckDB SQL](https://img.shields.io/badge/SQL-DuckDB-FFF000) ![Power BI DAX](https://img.shields.io/badge/Power%20BI-DAX-F2C811) ![Plotly](https://img.shields.io/badge/Dashboard-Plotly-3F4F75) ![pytest](https://img.shields.io/badge/Tests-pytest-0A9EDC)
 
@@ -21,8 +21,8 @@ A portfolio analytics project: a decomposition framework and dashboards for trac
 | Decomposition frameworks | Split a spend change into four additive effects with LMDI, which leaves no residual and does not depend on factor order. Cross-checked against sequential substitution | [mart_decomposition.sql](sql/marts/mart_decomposition.sql), [decomposition.py](src/decomposition.py) |
 | SQL | Layered DuckDB pipeline (staging, intermediate, marts) with CTEs, grouping sets and window functions | [sql/](sql) |
 | Python | Independent pandas rebuild of the whole analysis, used to validate the SQL | [python_pipeline.py](src/python_pipeline.py), [validate.py](src/validate.py) |
-| Dashboards | 4-page interactive dashboard with scenario, tier and tenure slicers, and a Power BI star schema with commented DAX | [docs/index.html](docs/index.html), [powerbi/](powerbi) |
-| Testing | Unit tests on known-answer cases, SQL tested on synthetic cells, SQL tested against Python on the real data | [tests/](tests) |
+| Dashboards | 4-page Power BI report on a star schema with 70 commented DAX measures, and the same 4 pages as an interactive web dashboard | [powerbi/](powerbi), [docs/index.html](docs/index.html) |
+| Testing | Unit tests on known-answer cases, SQL tested against Python on the real data, DAX tested against SQL inside Power BI Desktop | [tests/](tests), [verify_dax.ps1](powerbi/verify_dax.ps1) |
 | Handling weak data | Missing quarterly levels handled with a documented assumption and a sensitivity check. Small samples flagged, not interpreted | [ASSUMPTIONS.md](ASSUMPTIONS.md), [data profile](docs/data_profile.md) |
 | Communication | One-page memo with the answer first, findings with numbers, recommendations and limits | [docs/memo.md](docs/memo.md) |
 
@@ -30,7 +30,7 @@ A portfolio analytics project: a decomposition framework and dashboards for trac
 
 Everything in this section is produced by the build and can be reproduced with one command.
 
-### 1. The dashboard
+### 1. The web dashboard
 
 Four pages. Every chart title is generated from the data and states the takeaway for the current selection.
 
@@ -57,15 +57,39 @@ Validation passed
 
 In plain terms: across 156 cells the two implementations agree to a hundred-millionth of a dollar, the four effects add up to the spend change, segments add up to the portfolio, and the Power BI fact table reproduces the marts.
 
-### 3. Tests pass
+### 3. The Power BI report, checked inside Power BI Desktop
+
+The same four pages as a Power BI report. These are screenshots from Power BI Desktop.
+
+| | |
+|---|---|
+| **1. KPI overview** ![Power BI KPI overview page](docs/img/powerbi_page1_overview.png) | **2. Spend bridge** ![Power BI spend bridge page with waterfall](docs/img/powerbi_page2_bridge.png) |
+| **3. Tier x tenure heatmap** ![Power BI tier by tenure heatmap page](docs/img/powerbi_page3_heatmap.png) | **4. Attrition lens** ![Power BI attrition lens page](docs/img/powerbi_page4_attrition.png) |
+
+The report is stored as a Power BI Project, so the model and every visual are text files that can be reviewed and diffed: [powerbi/report](powerbi/report). Open `CardPortfolioTracker.pbip` in Power BI Desktop and click Refresh.
+
+The DAX is not trusted because it looks right. [verify_dax.ps1](powerbi/verify_dax.ps1) connects to the engine inside Power BI Desktop, evaluates the measures for every scenario, tier and tenure combination a slicer can produce, and compares them with the SQL pipeline. From the last run ([full output](docs/proof/powerbi_dax_check.txt)):
+
+```
+Slicer combinations checked: 48 (2 scenarios x tier x tenure, including All)
+Values compared: 1012
+Largest absolute difference: 0.0050 on B / Silver / 49+, Effect Avg Ticket
+Tolerance: 0.01 (expected values are rounded to 2 decimals for dollars, 6 for ratios)
+RESULT: PASS
+```
+
+That check found a real bug on its first run: two title measures used a variable name that the Power BI engine treats as a keyword. It is fixed and there is now a test for it.
+
+### 4. Tests pass
 
 ```
 == Run tests (pytest) ==
-........................................................................ [100%]
-72 passed
+........................................................................ [ 93%]
+.....                                                                    [100%]
+77 passed
 ```
 
-What the 72 tests cover:
+What the 77 tests cover:
 
 - effects sum to the total change, for LMDI, sequential substitution and the average over all factor orders
 - a zero-change case gives zero effects
@@ -74,12 +98,13 @@ What the 72 tests cover:
 - the SQL model gives known answers on hand-built cells
 - SQL and Python agree on the real data within 1e-6
 - the Power BI star schema reproduces the pipeline result for all 48 slicer combinations
+- every measure and column used by a Power BI visual exists in the model
 
-### 4. Every quoted number is traceable
+### 5. Every quoted number is traceable
 
-The numbers in this README and in the memo are not typed from memory. [check_docs.py](src/check_docs.py) reads both files on every build and fails if a number is not found in [headline_numbers.json](outputs/headline_numbers.json) or the build log.
+The numbers in this README and in the memo are not typed from memory. [check_docs.py](src/check_docs.py) reads both files on every build and fails if a number is not found in [headline_numbers.json](outputs/headline_numbers.json) or the proof files in [docs/proof](docs/proof).
 
-### 5. Check it yourself
+### 6. Check it yourself
 
 ```powershell
 git clone https://github.com/Tharun0127/card-portfolio-performance-tracker.git
@@ -169,9 +194,10 @@ Either script creates `.venv`, installs the pinned `requirements.txt`, and runs 
 4. rebuilds the decomposition in Python and asserts it matches the SQL within 1e-6
 5. writes `docs/results.md` and `outputs/headline_numbers.json`
 6. builds `docs/index.html`
-7. takes dashboard screenshots if Edge or Chrome is installed
-8. runs the tests and saves the build log
-9. checks that every number quoted in the memo and this README was produced by the pipeline
+7. generates the Power BI project in `powerbi/report`
+8. takes dashboard screenshots if Edge or Chrome is installed
+9. runs the tests and saves the build log
+10. checks that every number quoted in the memo and this README was produced by the pipeline
 
 If the Kaggle download fails, download the file by hand from https://www.kaggle.com/datasets/sakshigoyal7/credit-card-customers and put `BankChurners.csv` in `data/raw/`. The raw data is git-ignored.
 
@@ -190,7 +216,7 @@ Full detail, derivation and sensitivity results are in [ASSUMPTIONS.md](ASSUMPTI
 - The decomposition is descriptive. It shows which factor moved, not why.
 - Premium tiers are too small to read.
 - In scenario B the portfolio-level customers effect prices each lost customer at the portfolio average. The attrition page shows the cohort view next to it.
-- The Power BI deliverable is a build kit: star schema CSVs, commented DAX, a theme and a step-by-step guide. The data and the measure logic are tested by the pipeline. A finished `.pbix` is not included, and the guide has a check table to confirm the report against the pipeline once it is assembled.
+- The Power BI report is stored as a Power BI Project (text files), not as a `.pbix`. It holds no data until you click Refresh in Power BI Desktop, which loads the CSVs in `powerbi/`. The DAX check needs Power BI Desktop open, so it is run by hand and is not part of `run_all`.
 - This is a public teaching dataset. Nothing here describes a real issuer.
 
 ## Repository map
@@ -201,8 +227,8 @@ Full detail, derivation and sensitivity results are in [ASSUMPTIONS.md](ASSUMPTI
 | `src/` | Pipeline runner, Python decomposition, validation, report, dashboard builder |
 | `tests/` | pytest suite |
 | `outputs/` | Mart CSVs and headline numbers |
-| `powerbi/` | Star schema CSVs, `measures.dax`, theme, build guide, expected values |
-| `docs/` | Dashboard (`index.html`), memo, results, data profile, screenshots, build log |
+| `powerbi/` | Power BI Project (`report/`), star schema CSVs, `measures.dax`, theme, guide, DAX check script |
+| `docs/` | Web dashboard (`index.html`), memo, results, data profile, screenshots, proof files |
 | `ASSUMPTIONS.md` | Derivation of the quarterly values, sensitivity check, every modelling rule |
 | `PLAN.md` | The plan written before the build, and what changed |
 

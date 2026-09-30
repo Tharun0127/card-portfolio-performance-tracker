@@ -1,0 +1,150 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.0.0/schema.json",
+  "name": "p3_table",
+  "position": {
+    "x": 20,
+    "y": 458,
+    "z": 5000,
+    "height": 216,
+    "width": 780,
+    "tabOrder": 5000
+  },
+  "visual": {
+    "visualType": "tableEx",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "dim_customer"
+                    }
+                  },
+                  "Property": "tier_tenure_cell"
+                }
+              },
+              "queryRef": "dim_customer.tier_tenure_cell",
+              "nativeQueryRef": "tier_tenure_cell",
+              "displayName": "Cell"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Customers Q1"
+                }
+              },
+              "queryRef": "_Measures.Customers Q1",
+              "nativeQueryRef": "Customers Q1",
+              "displayName": "Customers, Q1"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Spend Change %"
+                }
+              },
+              "queryRef": "_Measures.Spend Change %",
+              "nativeQueryRef": "Spend Change %",
+              "displayName": "Spend change"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Dominant Driver"
+                }
+              },
+              "queryRef": "_Measures.Dominant Driver",
+              "nativeQueryRef": "Dominant Driver",
+              "displayName": "Dominant driver"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Over Index"
+                }
+              },
+              "queryRef": "_Measures.Over Index",
+              "nativeQueryRef": "Over Index",
+              "displayName": "Over-index"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Sample Flag"
+                }
+              },
+              "queryRef": "_Measures.Sample Flag",
+              "nativeQueryRef": "Sample Flag",
+              "displayName": "Sample"
+            }
+          ]
+        }
+      }
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Cell detail'"
+                }
+              }
+            },
+            "titleWrap": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "fontSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "11.0D"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

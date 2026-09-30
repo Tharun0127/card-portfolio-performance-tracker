@@ -1,0 +1,90 @@
+table fact_customer_quarter
+	lineageTag: 582fcd43-09ff-520d-a6c1-a8b609c46457
+
+	column scenario_key
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 88826cd1-41ea-5bac-ac84-58fd579ce873
+		summarizeBy: none
+		sourceColumn: scenario_key
+
+		annotation SummarizationSetBy = User
+
+	column customer_id
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 806807e3-1100-5850-8001-27610986b293
+		summarizeBy: none
+		sourceColumn: customer_id
+
+		annotation SummarizationSetBy = User
+
+	column tier_key
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 22b4e3e1-8371-51ad-b2a0-efaab11e49e5
+		summarizeBy: none
+		sourceColumn: tier_key
+
+		annotation SummarizationSetBy = User
+
+	column tenure_key
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: d0292b7e-dbc5-541b-884d-9708c4d678b1
+		summarizeBy: none
+		sourceColumn: tenure_key
+
+		annotation SummarizationSetBy = User
+
+	column quarter
+		dataType: string
+		lineageTag: be01142e-acd7-51cc-98f3-9e0d48687315
+		summarizeBy: none
+		sourceColumn: quarter
+
+		annotation SummarizationSetBy = User
+
+	column is_active
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 2e1e22ea-8f49-587a-8425-40fc17e7b8ba
+		summarizeBy: none
+		sourceColumn: is_active
+
+		annotation SummarizationSetBy = User
+
+	column txn_count
+		dataType: double
+		isHidden
+		lineageTag: 5254673e-4ef7-5209-8981-1f979e15f9d0
+		summarizeBy: none
+		sourceColumn: txn_count
+
+		annotation SummarizationSetBy = User
+
+	column spend
+		dataType: double
+		isHidden
+		lineageTag: 39754ea5-1a25-5d99-acd6-e5d2444c4837
+		summarizeBy: none
+		sourceColumn: spend
+
+		annotation SummarizationSetBy = User
+
+	partition fact_customer_quarter = m
+		mode: import
+		source =
+				let
+				    Source = Csv.Document(File.Contents(DataFolder & "fact_customer_quarter.csv"), [Delimiter = ",", Columns = 8, Encoding = 65001, QuoteStyle = QuoteStyle.Csv]),
+				    Promoted = Table.PromoteHeaders(Source, [PromoteAllScalars = true]),
+				    Typed = Table.TransformColumnTypes(Promoted, {{"scenario_key", Int64.Type}, {"customer_id", Int64.Type}, {"tier_key", Int64.Type}, {"tenure_key", Int64.Type}, {"quarter", type text}, {"is_active", Int64.Type}, {"txn_count", type number}, {"spend", type number}}, "en-US")
+				in
+				    Typed
+
+	annotation PBI_ResultType = Table

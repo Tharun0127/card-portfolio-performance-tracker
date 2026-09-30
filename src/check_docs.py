@@ -1,8 +1,8 @@
 """Check that every number quoted in the write-ups comes from the pipeline outputs.
 
 Rule: a number in docs/memo.md or README.md must appear in
-outputs/headline_numbers.json or in docs/proof/build_log.txt (both written by the
-pipeline), or be one of a short list of structural numbers (counts of things in the
+outputs/headline_numbers.json or in the proof files under docs/proof (all written by
+the pipeline or by the Power BI check), or be one of a short list of structural numbers (counts of things in the
 document, tenure band edges, the Python version).
 
 Notes kept in the git-ignored private/ folder are checked the same way when present.
@@ -18,6 +18,7 @@ from src.paths import DOCS_DIR, OUTPUTS_DIR, ROOT
 
 PRIVATE_DIR = ROOT / "private"
 BUILD_LOG = DOCS_DIR / "proof" / "build_log.txt"
+POWERBI_CHECK = DOCS_DIR / "proof" / "powerbi_dax_check.txt"  # written by verify_dax.ps1
 CHECKED_FILES = [DOCS_DIR / "memo.md", ROOT / "README.md", PRIVATE_DIR / "RESUME_BULLETS.md"]
 STYLE_FILES = CHECKED_FILES + [PRIVATE_DIR / "INTERVIEW_PREP.md", ROOT / "ASSUMPTIONS.md",
                                ROOT / "PLAN.md", ROOT / "powerbi" / "POWERBI_BUILD_GUIDE.md"]
@@ -54,8 +55,9 @@ def clean(token: str) -> str:
 def allowed_numbers() -> set[str]:
     facts = json.loads((OUTPUTS_DIR / "headline_numbers.json").read_text(encoding="utf-8"))
     sources = list(facts.values())
-    if BUILD_LOG.exists():
-        sources.append(BUILD_LOG.read_text(encoding="utf-8"))
+    for proof in (BUILD_LOG, POWERBI_CHECK):
+        if proof.exists():
+            sources.append(proof.read_text(encoding="utf-8"))
     found: set[str] = set()
     for value in sources:
         found.update(clean(t) for t in NUMBER.findall(value))

@@ -1,0 +1,165 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.0.0/schema.json",
+  "name": "p4_table",
+  "position": {
+    "x": 650,
+    "y": 162,
+    "z": 7000,
+    "height": 250,
+    "width": 610,
+    "tabOrder": 7000
+  },
+  "visual": {
+    "visualType": "tableEx",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "dim_customer"
+                    }
+                  },
+                  "Property": "attrition_flag"
+                }
+              },
+              "queryRef": "dim_customer.attrition_flag",
+              "nativeQueryRef": "attrition_flag",
+              "displayName": "Group"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Customers Q1"
+                }
+              },
+              "queryRef": "_Measures.Customers Q1",
+              "nativeQueryRef": "Customers Q1",
+              "displayName": "Customers"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Share of Q1 Spend"
+                }
+              },
+              "queryRef": "_Measures.Share of Q1 Spend",
+              "nativeQueryRef": "Share of Q1 Spend",
+              "displayName": "Share of Q1 spend"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Spend per Customer Q1"
+                }
+              },
+              "queryRef": "_Measures.Spend per Customer Q1",
+              "nativeQueryRef": "Spend per Customer Q1",
+              "displayName": "Spend per customer, Q1"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Spend per Customer Q4"
+                }
+              },
+              "queryRef": "_Measures.Spend per Customer Q4",
+              "nativeQueryRef": "Spend per Customer Q4",
+              "displayName": "Spend per customer, Q4"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Txns per Customer Q1"
+                }
+              },
+              "queryRef": "_Measures.Txns per Customer Q1",
+              "nativeQueryRef": "Txns per Customer Q1",
+              "displayName": "Txns per customer, Q1"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Txns per Customer Q4"
+                }
+              },
+              "queryRef": "_Measures.Txns per Customer Q4",
+              "nativeQueryRef": "Txns per Customer Q4",
+              "displayName": "Txns per customer, Q4"
+            }
+          ]
+        }
+      }
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Attrited customers spend less per head and cut transactions harder'"
+                }
+              }
+            },
+            "titleWrap": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "fontSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "11.0D"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

@@ -4,7 +4,8 @@
 
 Steps: download the data if it is missing, profile it, run the SQL pipeline, validate
 SQL against the independent Python rebuild, write the results report, build the
-dashboard, take screenshots, run the tests, check the write-ups against the outputs.
+dashboard and the Power BI project, take screenshots, run the tests, check the
+write-ups against the outputs.
 Any failing step stops the build.
 
 The output of the build is saved to docs/proof/build_log.txt so that the validation
@@ -19,8 +20,8 @@ import subprocess
 import sys
 import time
 
-from src import (build_dashboard, check_docs, download_data, profile_data, report, run_sql,
-                 screenshot, validate)
+from src import (build_dashboard, build_powerbi_project, check_docs, download_data,
+                 profile_data, report, run_sql, screenshot, validate)
 from src.paths import DOCS_DIR, ROOT
 
 BUILD_LOG = DOCS_DIR / "proof" / "build_log.txt"
@@ -33,6 +34,7 @@ STEPS = [
     ("Validate SQL against Python", validate.main, True),
     ("Write results report", report.main, True),
     ("Build Plotly dashboard", build_dashboard.main, True),
+    ("Generate Power BI project", build_powerbi_project.main, True),
     ("Take dashboard screenshots", screenshot.main, False),  # depends on a local browser
 ]
 

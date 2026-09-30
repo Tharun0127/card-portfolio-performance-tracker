@@ -1,0 +1,33 @@
+table dim_bridge_step
+	lineageTag: 459302df-409a-54b4-92e9-3751c46b30d5
+
+	column step_key
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: c9c14c78-1bab-5c53-9757-e87e248b7841
+		summarizeBy: none
+		sourceColumn: step_key
+
+		annotation SummarizationSetBy = User
+
+	column step
+		dataType: string
+		lineageTag: f78867f2-b88c-529c-bf95-6acd114f7b9d
+		summarizeBy: none
+		sourceColumn: step
+		sortByColumn: step_key
+
+		annotation SummarizationSetBy = User
+
+	partition dim_bridge_step = m
+		mode: import
+		source =
+				let
+				    Source = Csv.Document(File.Contents(DataFolder & "dim_bridge_step.csv"), [Delimiter = ",", Columns = 2, Encoding = 65001, QuoteStyle = QuoteStyle.Csv]),
+				    Promoted = Table.PromoteHeaders(Source, [PromoteAllScalars = true]),
+				    Typed = Table.TransformColumnTypes(Promoted, {{"step_key", Int64.Type}, {"step", type text}}, "en-US")
+				in
+				    Typed
+
+	annotation PBI_ResultType = Table

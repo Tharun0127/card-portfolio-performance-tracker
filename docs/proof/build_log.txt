@@ -38,9 +38,13 @@ Wrote docs/results.md and outputs/headline_numbers.json
 == Build Plotly dashboard ==
 Wrote docs/index.html (4.9 MB)
 
+== Generate Power BI project ==
+Wrote powerbi/report/CardPortfolioTracker.pbip: 70 measures, 4 pages, 38 visuals
+
 == Run tests (pytest) ==
-........................................................................ [100%]
-72 passed
+........................................................................ [ 93%]
+.....                                                                    [100%]
+77 passed
 
 == Check numbers quoted in the write-ups ==
 Document check passed: every number quoted in the write-ups is produced by the pipeline

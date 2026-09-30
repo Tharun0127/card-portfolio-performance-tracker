@@ -1,0 +1,641 @@
+/// Home table for every measure. It holds no data.
+table _Measures
+	lineageTag: d97e07b8-eef9-5894-a278-4f47241457c7
+
+	/// The scenario being evaluated: 1 = A, as observed. 2 = B, Q4 exit run-rate.
+	/// Falls back to 1 when the slicer has zero or several selections, so measures never
+	/// add the two scenarios together.
+	measure 'Scenario Key' = SELECTEDVALUE ( dim_scenario[scenario_key], 1 )
+		formatString: #,0
+		lineageTag: 2069dad9-069d-5144-829d-bbb94eaf157e
+
+	/// Cells with fewer customers than this on the Q1 book are flagged and not interpreted.
+	measure 'Low N Threshold' = 50
+		formatString: #,0
+		lineageTag: 259fab92-d080-5dce-bf71-a9cfbff7377d
+
+	/// Customers on book in Q1.
+	measure 'Customers Q1' =
+			VAR s = [Scenario Key]
+			RETURN
+			    COALESCE (
+			        CALCULATE (
+			            COUNTROWS ( fact_customer_quarter ),
+			            fact_customer_quarter[quarter] = "Q1",
+			            fact_customer_quarter[scenario_key] = s
+			        ),
+			        0
+			    )
+		formatString: #,0
+		lineageTag: 82d23c45-5f78-591f-9459-29dae6d39569
+
+	/// Customers on book in Q4. In scenario B attrited customers have no Q4 row.
+	measure 'Customers Q4' =
+			VAR s = [Scenario Key]
+			RETURN
+			    COALESCE (
+			        CALCULATE (
+			            COUNTROWS ( fact_customer_quarter ),
+			            fact_customer_quarter[quarter] = "Q4",
+			            fact_customer_quarter[scenario_key] = s
+			        ),
+			        0
+			    )
+		formatString: #,0
+		lineageTag: 0b932be2-0fb3-55cb-a107-a02c034d0276
+
+	/// On-book customers with at least one transaction in Q1.
+	measure 'Active Customers Q1' =
+			VAR s = [Scenario Key]
+			RETURN
+			    COALESCE (
+			        CALCULATE (
+			            SUM ( fact_customer_quarter[is_active] ),
+			            fact_customer_quarter[quarter] = "Q1",
+			            fact_customer_quarter[scenario_key] = s
+			        ),
+			        0
+			    )
+		formatString: #,0
+		lineageTag: 6e8e7374-46ee-5b70-bd49-ceb5b8936bc3
+
+	/// On-book customers with at least one transaction in Q4.
+	measure 'Active Customers Q4' =
+			VAR s = [Scenario Key]
+			RETURN
+			    COALESCE (
+			        CALCULATE (
+			            SUM ( fact_customer_quarter[is_active] ),
+			            fact_customer_quarter[quarter] = "Q4",
+			            fact_customer_quarter[scenario_key] = s
+			        ),
+			        0
+			    )
+		formatString: #,0
+		lineageTag: 89aaf8da-fa52-5302-a762-1c07ed5e439b
+
+	/// Derived Q1 transaction count (an estimate, not a whole number).
+	measure 'Txns Q1' =
+			VAR s = [Scenario Key]
+			RETURN
+			    COALESCE (
+			        CALCULATE (
+			            SUM ( fact_customer_quarter[txn_count] ),
+			            fact_customer_quarter[quarter] = "Q1",
+			            fact_customer_quarter[scenario_key] = s
+			        ),
+			        0
+			    )
+		formatString: #,0.00
+		lineageTag: 41aa804f-d20e-5925-8b02-264973981fad
+
+	/// Derived Q4 transaction count.
+	measure 'Txns Q4' =
+			VAR s = [Scenario Key]
+			RETURN
+			    COALESCE (
+			        CALCULATE (
+			            SUM ( fact_customer_quarter[txn_count] ),
+			            fact_customer_quarter[quarter] = "Q4",
+			            fact_customer_quarter[scenario_key] = s
+			        ),
+			        0
+			    )
+		formatString: #,0.00
+		lineageTag: ec1e1e41-3864-5be0-9dc0-70351a002fb1
+
+	/// Derived Q1 spend in dollars.
+	measure 'Spend Q1' =
+			VAR s = [Scenario Key]
+			RETURN
+			    COALESCE (
+			        CALCULATE (
+			            SUM ( fact_customer_quarter[spend] ),
+			            fact_customer_quarter[quarter] = "Q1",
+			            fact_customer_quarter[scenario_key] = s
+			        ),
+			        0
+			    )
+		formatString: \$#,0,.0\K;-\$#,0,.0\K;\$#,0,.0\K
+		lineageTag: c16da899-e2cb-5f5f-ad6e-eb426a205a41
+
+	/// Derived Q4 spend in dollars.
+	measure 'Spend Q4' =
+			VAR s = [Scenario Key]
+			RETURN
+			    COALESCE (
+			        CALCULATE (
+			            SUM ( fact_customer_quarter[spend] ),
+			            fact_customer_quarter[quarter] = "Q4",
+			            fact_customer_quarter[scenario_key] = s
+			        ),
+			        0
+			    )
+		formatString: \$#,0,.0\K;-\$#,0,.0\K;\$#,0,.0\K
+		lineageTag: 98b4cbc6-59fc-5af5-a504-65a44ed8d2f4
+
+	/// Share of on-book customers who transacted in Q1.
+	measure 'Active Rate Q1' = COALESCE ( DIVIDE ( [Active Customers Q1], [Customers Q1] ), 0 )
+		formatString: 0.00%;-0.00%;0.00%
+		lineageTag: 25cbf86f-b132-5181-90d8-529cad7805cf
+
+	/// Share of on-book customers who transacted in Q4.
+	measure 'Active Rate Q4' = COALESCE ( DIVIDE ( [Active Customers Q4], [Customers Q4] ), 0 )
+		formatString: 0.00%;-0.00%;0.00%
+		lineageTag: fbcbb333-cdb1-565a-8eb4-1221c78eb4d9
+
+	/// Transactions per active customer in Q1 (frequency).
+	measure 'Txns per Active Q1' = COALESCE ( DIVIDE ( [Txns Q1], [Active Customers Q1] ), 0 )
+		formatString: #,0.00
+		lineageTag: 0e2aeb19-2468-5e16-87aa-42b4cacd9e96
+
+	/// Transactions per active customer in Q4.
+	measure 'Txns per Active Q4' = COALESCE ( DIVIDE ( [Txns Q4], [Active Customers Q4] ), 0 )
+		formatString: #,0.00
+		lineageTag: 26841a12-aa6c-57ed-8270-e47758b819e7
+
+	/// Average transaction size in Q1.
+	measure 'Avg Ticket Q1' = COALESCE ( DIVIDE ( [Spend Q1], [Txns Q1] ), 0 )
+		formatString: \$#,0.00;-\$#,0.00;\$#,0.00
+		lineageTag: a0b3f785-0ad8-52ed-b287-10df1a6ea4a1
+
+	/// Average transaction size in Q4.
+	measure 'Avg Ticket Q4' = COALESCE ( DIVIDE ( [Spend Q4], [Txns Q4] ), 0 )
+		formatString: \$#,0.00;-\$#,0.00;\$#,0.00
+		lineageTag: 6d92d589-472f-5efb-bc70-932e2badcabf
+
+	/// Q4 spend minus Q1 spend. This is the amount the four effects must add up to.
+	measure 'Spend Change' = [Spend Q4] - [Spend Q1]
+		formatString: \$#,0,.0\K;-\$#,0,.0\K;\$#,0,.0\K
+		lineageTag: 550c911a-dac6-530a-819e-e999315e837d
+
+	/// Spend change as a share of Q1 spend. Blank when there is no Q1 spend.
+	measure 'Spend Change %' = DIVIDE ( [Spend Change], [Spend Q1] )
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 424b0461-2075-5f12-95a2-db1b2679969e
+
+	/// Change in customers on book, as a share of the Q1 book.
+	measure 'Customers Change %' = DIVIDE ( [Customers Q4] - [Customers Q1], [Customers Q1] )
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 15825f7d-0052-54de-83d5-a1c858e149d7
+
+	/// Change in active rate in percentage points (as a fraction, format as 0.00%).
+	measure 'Active Rate Change pts' = [Active Rate Q4] - [Active Rate Q1]
+		formatString: 0.00%;-0.00%;0.00%
+		lineageTag: 5189d231-2a57-5ea9-a4ef-1f61d2266ad6
+
+	/// Relative change in transactions per active customer.
+	measure 'Txns per Active Change %' = DIVIDE ( [Txns per Active Q4] - [Txns per Active Q1], [Txns per Active Q1] )
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: a7f37c00-1a54-5569-a350-bd547ec3be86
+
+	/// Relative change in average ticket.
+	measure 'Avg Ticket Change %' = DIVIDE ( [Avg Ticket Q4] - [Avg Ticket Q1], [Avg Ticket Q1] )
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: bdccd310-788f-589b-bc4d-ad43dd711659
+
+	/// TRUE when all eight factor values are positive, so LMDI can be used.
+	measure 'LMDI Applicable' =
+			MINX (
+			    {
+			        [Customers Q1], [Customers Q4],
+			        [Active Rate Q1], [Active Rate Q4],
+			        [Txns per Active Q1], [Txns per Active Q4],
+			        [Avg Ticket Q1], [Avg Ticket Q4]
+			    },
+			    [Value]
+			) > 0
+		lineageTag: 71d093bc-34ae-5fac-9c68-a31b87cedd28
+
+	/// Logarithmic mean of Q4 and Q1 spend: the common weight applied to every factor.
+	measure 'Log Mean Spend' =
+			VAR s0 = [Spend Q1]
+			VAR s1 = [Spend Q4]
+			RETURN
+			    IF (
+			        [LMDI Applicable],
+			        IF ( s1 = s0, s0, DIVIDE ( s1 - s0, LN ( s1 ) - LN ( s0 ) ) )
+			    )
+		formatString: \$#,0,.0\K;-\$#,0,.0\K;\$#,0,.0\K
+		lineageTag: bc3fd78f-c84d-5f51-ae7c-ca9a4e879c4b
+
+	/// Spend change caused by the change in customers on book.
+	measure 'Effect Customers' =
+			VAR n0 = [Customers Q1]
+			VAR n1 = [Customers Q4]
+			RETURN
+			    IF (
+			        [LMDI Applicable],
+			        [Log Mean Spend] * LN ( DIVIDE ( n1, n0 ) ),
+			        ( n1 - n0 ) * [Active Rate Q1] * [Txns per Active Q1] * [Avg Ticket Q1]
+			    )
+		formatString: \$#,0,.0\K;-\$#,0,.0\K;\$#,0,.0\K
+		lineageTag: 598c7710-8b84-5630-b913-d59306a99894
+
+	/// Spend change caused by the change in active rate.
+	measure 'Effect Active Rate' =
+			VAR a0 = [Active Rate Q1]
+			VAR a1 = [Active Rate Q4]
+			RETURN
+			    IF (
+			        [LMDI Applicable],
+			        [Log Mean Spend] * LN ( DIVIDE ( a1, a0 ) ),
+			        [Customers Q4] * ( a1 - a0 ) * [Txns per Active Q1] * [Avg Ticket Q1]
+			    )
+		formatString: \$#,0,.0\K;-\$#,0,.0\K;\$#,0,.0\K
+		lineageTag: 5f250748-e9f5-5769-b848-75d7c01ae7e3
+
+	/// Spend change caused by the change in transactions per active customer.
+	measure 'Effect Txns per Active' =
+			VAR t0 = [Txns per Active Q1]
+			VAR t1 = [Txns per Active Q4]
+			RETURN
+			    IF (
+			        [LMDI Applicable],
+			        [Log Mean Spend] * LN ( DIVIDE ( t1, t0 ) ),
+			        [Customers Q4] * [Active Rate Q4] * ( t1 - t0 ) * [Avg Ticket Q1]
+			    )
+		formatString: \$#,0,.0\K;-\$#,0,.0\K;\$#,0,.0\K
+		lineageTag: f6f21697-6a42-5e20-97a3-9cff5de1ff21
+
+	/// Spend change caused by the change in average ticket.
+	measure 'Effect Avg Ticket' =
+			VAR k0 = [Avg Ticket Q1]
+			VAR k1 = [Avg Ticket Q4]
+			RETURN
+			    IF (
+			        [LMDI Applicable],
+			        [Log Mean Spend] * LN ( DIVIDE ( k1, k0 ) ),
+			        [Customers Q4] * [Active Rate Q4] * [Txns per Active Q4] * ( k1 - k0 )
+			    )
+		formatString: \$#,0,.0\K;-\$#,0,.0\K;\$#,0,.0\K
+		lineageTag: a462d864-88fd-5592-8370-e6114e6a7a20
+
+	/// Sum of the four effects minus the spend change. Should show 0 everywhere.
+	/// Put it on a card while building the report, then remove it.
+	measure 'Effect Check' =
+			[Effect Customers] + [Effect Active Rate] + [Effect Txns per Active]
+			    + [Effect Avg Ticket] - [Spend Change]
+		formatString: \$#,0.00;-\$#,0.00;\$#,0.00
+		lineageTag: 22891d97-f1dd-5a9c-b78f-6e9dcce19e11
+
+	/// Which method produced the effects in the current selection.
+	measure 'Decomposition Method' = IF ( [LMDI Applicable], "LMDI", "Sequential fallback (a factor is zero)" )
+		lineageTag: 66abbe81-f92c-5ba0-9c67-4ac063a8b730
+
+	/// Each effect as a share of the spend change. Above 100% means another factor
+	/// pulled the other way.
+	measure 'Share Customers' = DIVIDE ( [Effect Customers], [Spend Change] )
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 489c3703-00bc-5f8e-94ce-b75b8fd5e4bb
+
+	measure 'Share Active Rate' = DIVIDE ( [Effect Active Rate], [Spend Change] )
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 66ba7a82-31d8-5cb3-9d3a-ed62ca710484
+
+	measure 'Share Txns per Active' = DIVIDE ( [Effect Txns per Active], [Spend Change] )
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: d333d142-5065-5677-95c6-51aa7879c9e1
+
+	measure 'Share Avg Ticket' = DIVIDE ( [Effect Avg Ticket], [Spend Change] )
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 357cdec8-b253-5f2c-b0df-d966a5c6e653
+
+	/// Value for the waterfall. dim_bridge_step is a disconnected table that supplies the
+	/// axis categories. With no single step in context (the visual's total column) the
+	/// measure returns Q4 spend, which is also what the five steps add up to.
+	measure 'Bridge Value' =
+			SWITCH (
+			    SELECTEDVALUE ( dim_bridge_step[step_key] ),
+			    1, [Spend Q1],
+			    2, [Effect Customers],
+			    3, [Effect Active Rate],
+			    4, [Effect Txns per Active],
+			    5, [Effect Avg Ticket],
+			    [Spend Q4]
+			)
+		formatString: \$#,0,.0\K;-\$#,0,.0\K;\$#,0,.0\K
+		lineageTag: d4d54fba-3381-5c00-84b9-8e1c1d795d7e
+
+	/// The effect with the largest absolute size. Ties resolve in the order customers,
+	/// transactions per active, average ticket, active rate (same as the SQL).
+	measure 'Dominant Driver' =
+			VAR e1 = ABS ( [Effect Customers] )
+			VAR e2 = ABS ( [Effect Active Rate] )
+			VAR e3 = ABS ( [Effect Txns per Active] )
+			VAR e4 = ABS ( [Effect Avg Ticket] )
+			VAR m = MAX ( MAX ( e1, e2 ), MAX ( e3, e4 ) )
+			RETURN
+			    SWITCH (
+			        TRUE (),
+			        m = 0, "None",
+			        m = e1, "Customers on book",
+			        m = e3, "Transactions per active",
+			        m = e4, "Average ticket",
+			        "Active rate"
+			    )
+		lineageTag: 9bce5943-86ad-58d7-b6d4-e41d11ddb0c5
+
+	/// Dollar value of the dominant effect, used in the dynamic titles.
+	measure 'Dominant Effect' =
+			SWITCH (
+			    [Dominant Driver],
+			    "Customers on book", [Effect Customers],
+			    "Transactions per active", [Effect Txns per Active],
+			    "Average ticket", [Effect Avg Ticket],
+			    "Active rate", [Effect Active Rate],
+			    0
+			)
+		formatString: \$#,0,.0\K;-\$#,0,.0\K;\$#,0,.0\K
+		lineageTag: 109560c8-fa18-5021-9977-3705fd63ac0f
+
+	/// TRUE when the current selection has customers but fewer than the threshold.
+	measure 'Is Low N' = [Customers Q1] > 0 && [Customers Q1] < [Low N Threshold]
+		lineageTag: 4a42f666-e411-50e8-806d-1359f6fdbe81
+
+	/// Text flag for tables and tooltips.
+	measure 'Sample Flag' =
+			SWITCH (
+			    TRUE (),
+			    [Customers Q1] = 0, "No customers",
+			    [Is Low N], "Low n, not interpreted",
+			    "OK"
+			)
+		lineageTag: 862e8524-9d1a-5545-9ee2-7f32074aefac
+
+	/// Number that drives the heatmap colour. Blank for low-n and empty cells so they
+	/// take the default grey instead of a colour.
+	measure 'Heatmap Value' = IF ( [Customers Q1] >= [Low N Threshold], [Spend Change %] )
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 8920ac92-7153-5436-a68e-14a143645514
+
+	/// Text shown in each heatmap cell: % change and dominant driver, or the low-n flag.
+	measure 'Heatmap Label' =
+			SWITCH (
+			    TRUE (),
+			    [Customers Q1] = 0, "no customers",
+			    [Is Low N], "low n (n=" & [Customers Q1] & ")",
+			    FORMAT ( [Spend Change %], "+0.0%;-0.0%;0.0%" ) & UNICHAR ( 10 ) & [Dominant Driver]
+			)
+		lineageTag: ee933eb9-ebe1-554e-bb75-1713ed6c16c8
+
+	/// Background colour of a heatmap cell, as a hex code. The scale is fixed in steps of
+	/// ten points of decline (0% to 40%) so small differences are not exaggerated.
+	/// Low-n cells are grey. Increases are shown in orange.
+	measure 'Heatmap Colour' =
+			VAR chg = [Heatmap Value]
+			RETURN
+			    SWITCH (
+			        TRUE (),
+			        [Customers Q1] = 0, "#fcfcfb",
+			        ISBLANK ( chg ), "#e1e0d9",
+			        chg > 0, "#eb6834",
+			        chg > -0.10, "#cde2fb",
+			        chg > -0.20, "#86b6ef",
+			        chg > -0.30, "#3987e5",
+			        chg > -0.40, "#1c5cab",
+			        "#0d366b"
+			    )
+		lineageTag: 6765e5b1-c6bd-50ca-8a14-5175d7818780
+
+	/// Text colour that stays readable on the heatmap background.
+	measure 'Heatmap Font Colour' =
+			VAR chg = [Heatmap Value]
+			RETURN
+			    SWITCH (
+			        TRUE (),
+			        ISBLANK ( chg ), "#52514e",
+			        chg > -0.20, "#0b0b0b",
+			        "#ffffff"
+			    )
+		lineageTag: 28aee8fc-e7e0-503d-bc00-5e092646fe41
+
+	/// Bar colour for segment charts: grey when the segment is low n, blue otherwise.
+	measure 'Bar Colour' = IF ( [Is Low N], "#c3c2b7", "#2a78d6" )
+		lineageTag: e1e6360d-c044-5f02-a6c8-096f738b7853
+
+	/// Share of the selected portfolio's spend change that this segment explains.
+	measure 'Share of Portfolio Change' = DIVIDE ( [Spend Change], CALCULATE ( [Spend Change], ALLSELECTED () ) )
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: fbcb2fff-49d1-56fc-93c8-17d8e53370a2
+
+	/// Share of the selected portfolio's Q1 spend that this segment holds.
+	measure 'Share of Q1 Spend' = DIVIDE ( [Spend Q1], CALCULATE ( [Spend Q1], ALLSELECTED () ) )
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 357d2115-757e-54dc-9962-2bdf99701255
+
+	/// Share of the selected portfolio's Q1 customers in this segment.
+	measure 'Share of Q1 Customers' = DIVIDE ( [Customers Q1], CALCULATE ( [Customers Q1], ALLSELECTED () ) )
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 914cc454-84e0-5f90-aed0-5324f79c413f
+
+	/// Above 1: the segment explains more of the change than its size suggests.
+	measure 'Over Index' = DIVIDE ( [Share of Portfolio Change], [Share of Q1 Spend] )
+		formatString: #,0.00
+		lineageTag: 597de3f5-577e-57ec-acd2-ddeb4cb8e27a
+
+	/// Segment change as a share of portfolio Q1 spend. Adds up to the portfolio % change.
+	measure 'Contribution pts' = DIVIDE ( [Spend Change], CALCULATE ( [Spend Q1], ALLSELECTED () ) )
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 2a556826-e5dd-565b-88d9-8f36b85feb5c
+
+	/// Spend per customer on book.
+	measure 'Spend per Customer Q1' = DIVIDE ( [Spend Q1], [Customers Q1] )
+		formatString: \$#,0;-\$#,0;\$#,0
+		lineageTag: c8791f2d-2fae-569d-85d0-bfe2bf026bcd
+
+	measure 'Spend per Customer Q4' = DIVIDE ( [Spend Q4], [Customers Q4] )
+		formatString: \$#,0;-\$#,0;\$#,0
+		lineageTag: 5f0f533f-aeb1-5b45-8183-ebe1f14f23af
+
+	measure 'Spend per Customer Change %' = DIVIDE ( [Spend per Customer Q4] - [Spend per Customer Q1], [Spend per Customer Q1] )
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 9658019d-c455-5804-8f93-403e942eaed6
+
+	/// Transactions per customer on book.
+	measure 'Txns per Customer Q1' = DIVIDE ( [Txns Q1], [Customers Q1] )
+		formatString: #,0.00
+		lineageTag: 32b82576-fd2d-517e-9676-54465b47abd6
+
+	measure 'Txns per Customer Q4' = DIVIDE ( [Txns Q4], [Customers Q4] )
+		formatString: #,0.00
+		lineageTag: f320c1de-9023-5e35-9163-0afb53f34ecf
+
+	measure 'Txns per Customer Change %' = DIVIDE ( [Txns per Customer Q4] - [Txns per Customer Q1], [Txns per Customer Q1] )
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: c1930b97-9a9c-5736-b93c-e7d68ca86c07
+
+	/// Customers on the Q1 book who are flagged as attrited.
+	measure 'Attrited Customers' = CALCULATE ( [Customers Q1], dim_customer[attrition_flag] = "Attrited Customer" )
+		formatString: #,0
+		lineageTag: d75d3a0e-7fb6-5e1f-b63c-a6a4b9808e85
+
+	/// Attrited customers as a share of the Q1 book.
+	measure 'Attrition Rate' = DIVIDE ( [Attrited Customers], [Customers Q1] )
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 61a4df0c-f1fc-5dbb-9908-7b8b7d01512f
+
+	/// Q1 spend of attrited customers as a share of all Q1 spend.
+	measure 'Attrited Share of Q1 Spend' =
+			DIVIDE (
+			    CALCULATE ( [Spend Q1], dim_customer[attrition_flag] = "Attrited Customer" ),
+			    [Spend Q1]
+			)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 12c82d03-dd3f-528c-a8b8-c3799837c22e
+
+	/// Q4 spend of attrited customers as observed (scenario A): the spend that leaves
+	/// with them. Scenario is forced to A whatever the slicer says.
+	measure 'Attrited Q4 Spend As Observed' =
+			CALCULATE (
+			    [Spend Q4],
+			    REMOVEFILTERS ( dim_scenario ),
+			    dim_scenario[scenario_key] = 1,
+			    dim_customer[attrition_flag] = "Attrited Customer"
+			)
+		formatString: \$#,0,.0\K;-\$#,0,.0\K;\$#,0,.0\K
+		lineageTag: 732e0b42-ad21-5773-aa39-73be9188aedd
+
+	/// Spend change under scenario B whatever the slicer says. Split by attrition flag
+	/// this gives the cohort view: what stayers did, and what leavers took with them.
+	measure 'Spend Change Exit Run-Rate' =
+			CALCULATE (
+			    [Spend Change],
+			    REMOVEFILTERS ( dim_scenario ),
+			    dim_scenario[scenario_key] = 2
+			)
+		formatString: \$#,0,.0\K;-\$#,0,.0\K;\$#,0,.0\K
+		lineageTag: d04cd77f-6e31-55e4-a4f7-2c3b34a88b80
+
+	/// Spend change % under scenario B whatever the slicer says.
+	measure 'Spend Change % Exit Run-Rate' =
+			CALCULATE (
+			    [Spend Change %],
+			    REMOVEFILTERS ( dim_scenario ),
+			    dim_scenario[scenario_key] = 2
+			)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 67d0939a-4614-5282-a334-d43896a0aa3e
+
+	/// Page 1 headline.
+	measure 'Title KPI' =
+			VAR chg = [Spend Change %]
+			RETURN
+			    "Q4 spend " & IF ( chg < 0, "fell ", "rose " )
+			        & FORMAT ( ABS ( chg ), "0.0%" ) & " against Q1, from "
+			        & FORMAT ( [Spend Q1] / 1000000, "$0.00" ) & "M to "
+			        & FORMAT ( [Spend Q4] / 1000000, "$0.00" ) & "M"
+		lineageTag: 6456b66e-b2b8-5c9a-8379-9e3a0ea53b47
+
+	/// Page 2 waterfall title.
+	measure 'Title Bridge' =
+			VAR chg = [Spend Change %]
+			VAR n = [Customers Q1]
+			RETURN
+			    SWITCH (
+			        TRUE (),
+			        n = 0, "No customers in this selection",
+			        [Is Low N], "Low n (" & n & " customers), not interpreted",
+			        "Spend " & IF ( chg < 0, "fell ", "rose " ) & FORMAT ( ABS ( chg ), "0.0%" )
+			            & ": " & LOWER ( [Dominant Driver] ) & " explains "
+			            & FORMAT ( DIVIDE ( [Dominant Effect], [Spend Change] ), "0%" )
+			            & " of the change"
+			    )
+		lineageTag: 0208246a-b743-5bb5-ad4c-b6c9fc5d1244
+
+	/// Page 3 heatmap title. Counts the interpretable cells and their range.
+	measure 'Title Heatmap' =
+			VAR cellTable =
+			    FILTER (
+			        ADDCOLUMNS (
+			            CROSSJOIN ( VALUES ( dim_tier[card_tier] ), VALUES ( dim_tenure[tenure_band] ) ),
+			            "@n", [Customers Q1],
+			            "@chg", [Spend Change %]
+			        ),
+			        [@n] >= [Low N Threshold]
+			    )
+			RETURN
+			    COUNTROWS ( cellTable ) & " interpretable cells changed between "
+			        & FORMAT ( MINX ( cellTable, [@chg] ), "0.0%" ) & " and "
+			        & FORMAT ( MAXX ( cellTable, [@chg] ), "0.0%" )
+		lineageTag: 4824d085-3ba1-5ad5-8ac0-b5affd5b15ce
+
+	/// Page 1 tier chart title: the range of spend change across tiers with enough customers.
+	measure 'Title Tier' =
+			VAR t =
+			    FILTER (
+			        ADDCOLUMNS ( VALUES ( dim_tier[card_tier] ), "@n", [Customers Q1], "@chg", [Spend Change %] ),
+			        [@n] >= [Low N Threshold]
+			    )
+			RETURN
+			    "Tiers with enough customers changed between "
+			        & FORMAT ( MINX ( t, [@chg] ), "0.0%" ) & " and "
+			        & FORMAT ( MAXX ( t, [@chg] ), "0.0%" ) & " (grey = low n)"
+		lineageTag: cbd96b61-d7f6-53fc-ad00-426ff9cb83cc
+
+	/// Page 1 tenure chart title: the range of spend change across tenure bands.
+	measure 'Title Tenure' =
+			VAR t =
+			    ADDCOLUMNS ( VALUES ( dim_tenure[tenure_band] ), "@chg", [Spend Change %] )
+			RETURN
+			    "Every tenure band changed between "
+			        & FORMAT ( MINX ( t, [@chg] ), "0.0%" ) & " and "
+			        & FORMAT ( MAXX ( t, [@chg] ), "0.0%" )
+		lineageTag: 688e62dd-3777-5e29-8938-9643d9c6f4cf
+
+	/// Page 3 contribution chart title: how far any interpretable cell is from its size.
+	measure 'Title Contribution' =
+			VAR cellTable =
+			    FILTER (
+			        ADDCOLUMNS (
+			            VALUES ( dim_customer[tier_tenure_cell] ),
+			            "@n", [Customers Q1],
+			            "@oi", [Over Index]
+			        ),
+			        [@n] >= [Low N Threshold]
+			    )
+			RETURN
+			    "The change follows segment size: over-index between "
+			        & FORMAT ( MINX ( cellTable, [@oi] ), "0.00" ) & " and "
+			        & FORMAT ( MAXX ( cellTable, [@oi] ), "0.00" ) & " for interpretable cells"
+		lineageTag: 5f8486ee-263e-526b-b2c6-324e53f4c511
+
+	/// Page 4 cohort waterfall title.
+	measure 'Title Cohort' =
+			"Exit run-rate change of "
+			    & FORMAT ( CALCULATE ( [Spend Change Exit Run-Rate], REMOVEFILTERS ( dim_customer ) ) / 1000000, "$0.00" )
+			    & "M by cohort: customers who stayed and customers who left"
+		lineageTag: 423766d4-fe0d-5d3b-8f7d-b00e96e414a6
+
+	/// Page 4 attrition rate chart title.
+	measure 'Title Attrition Rate' =
+			VAR t = ADDCOLUMNS ( VALUES ( dim_tenure[tenure_band] ), "@r", [Attrition Rate] )
+			RETURN
+			    "Attrition is spread evenly across tenure bands, from "
+			        & FORMAT ( MINX ( t, [@r] ), "0.0%" ) & " to "
+			        & FORMAT ( MAXX ( t, [@r] ), "0.0%" )
+		lineageTag: ba5b2826-462d-5951-8741-40b0ad6db975
+
+	/// Page 4 title.
+	measure 'Title Attrition' =
+			"Attrited customers are " & FORMAT ( [Attrition Rate], "0.0%" )
+			    & " of the book and " & FORMAT ( [Attrited Share of Q1 Spend], "0.0%" )
+			    & " of Q1 spend"
+		lineageTag: 4027dc9c-1865-5177-8de6-7498004d5c20
+
+	column Value
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 2c862d20-b71a-5e74-9d66-60b63c882852
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Value]
+
+		annotation SummarizationSetBy = User
+
+	partition _Measures = calculated
+		mode: import
+		source = {0}
+
+	annotation PBI_Id = 82a2a65da8ee58a2bf720080b041c3e1

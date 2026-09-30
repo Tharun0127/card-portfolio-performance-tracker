@@ -1,0 +1,12 @@
+Power BI DAX check, written by powerbi/verify_dax.ps1
+Measures evaluated in Power BI Desktop against the SQL pipeline (powerbi/expected_values.csv).
+
+Slicer combinations checked: 48 (2 scenarios x tier x tenure, including All)
+Values compared: 1012
+Largest absolute difference: 0.0050 on B / Silver / 49+, Effect Avg Ticket
+Tolerance: 0.01 (expected values are rounded to 2 decimals for dollars, 6 for ratios)
+Cohort view, exit run-rate: existing -2792091, attrited -1454733, total -4246823
+Attrited cohort under scenario B uses: Sequential fallback (a factor is zero)
+Spend Q1 with no single scenario selected: 12741922 (not doubled)
+
+RESULT: PASS

@@ -1,0 +1,158 @@
+table dim_customer
+	lineageTag: 8fc6f38d-a2f8-5020-9124-97333bebeb64
+
+	column customer_id
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 1bf5002f-68ac-54da-8a18-629c0f60874a
+		summarizeBy: none
+		sourceColumn: customer_id
+
+		annotation SummarizationSetBy = User
+
+	column attrition_flag
+		dataType: string
+		lineageTag: 8faa2aa6-3269-5f9f-a8bb-fa8f6ccc3fca
+		summarizeBy: none
+		sourceColumn: attrition_flag
+
+		annotation SummarizationSetBy = User
+
+	column card_tier
+		dataType: string
+		lineageTag: 5dad0e0a-1ada-5ab6-88c5-c2f6da8d0996
+		summarizeBy: none
+		sourceColumn: card_tier
+
+		annotation SummarizationSetBy = User
+
+	column tenure_band
+		dataType: string
+		lineageTag: d358b1d1-72db-51b8-afaf-b5f47e291747
+		summarizeBy: none
+		sourceColumn: tenure_band
+
+		annotation SummarizationSetBy = User
+
+	column tier_tenure_cell
+		dataType: string
+		lineageTag: 66db7992-9e95-573a-80f0-262413093fb0
+		summarizeBy: none
+		sourceColumn: tier_tenure_cell
+
+		annotation SummarizationSetBy = User
+
+	column cell_customers
+		dataType: int64
+		formatString: 0
+		lineageTag: bab172a8-1ef4-518f-8ceb-3f80efd480c8
+		summarizeBy: none
+		sourceColumn: cell_customers
+
+		annotation SummarizationSetBy = User
+
+	column cell_sample_flag
+		dataType: string
+		lineageTag: a56e8f2d-c89d-57a0-9273-80cfdb670c03
+		summarizeBy: none
+		sourceColumn: cell_sample_flag
+
+		annotation SummarizationSetBy = User
+
+	column months_on_book
+		dataType: int64
+		formatString: 0
+		lineageTag: 6d75580d-c9a5-5898-8f83-794073911e86
+		summarizeBy: none
+		sourceColumn: months_on_book
+
+		annotation SummarizationSetBy = User
+
+	column customer_age
+		dataType: int64
+		formatString: 0
+		lineageTag: f8e0e5ad-3221-5c72-8037-ec2f06052f12
+		summarizeBy: none
+		sourceColumn: customer_age
+
+		annotation SummarizationSetBy = User
+
+	column gender
+		dataType: string
+		lineageTag: d03aca5b-eb45-5d22-8eb9-6e8414d72d90
+		summarizeBy: none
+		sourceColumn: gender
+
+		annotation SummarizationSetBy = User
+
+	column education_level
+		dataType: string
+		lineageTag: 9ddbde67-bfbd-5a9a-929c-2fcd7acec001
+		summarizeBy: none
+		sourceColumn: education_level
+
+		annotation SummarizationSetBy = User
+
+	column marital_status
+		dataType: string
+		lineageTag: 11500b47-1287-5a59-a09f-974ddec80cce
+		summarizeBy: none
+		sourceColumn: marital_status
+
+		annotation SummarizationSetBy = User
+
+	column income_category
+		dataType: string
+		lineageTag: 001f2dcf-00e1-5ad2-87fa-a757900cff44
+		summarizeBy: none
+		sourceColumn: income_category
+
+		annotation SummarizationSetBy = User
+
+	column relationship_count
+		dataType: int64
+		formatString: 0
+		lineageTag: 80deb3c7-c217-5bfd-ba9b-9514787cff93
+		summarizeBy: none
+		sourceColumn: relationship_count
+
+		annotation SummarizationSetBy = User
+
+	column months_inactive_12m
+		dataType: int64
+		formatString: 0
+		lineageTag: 8c720bd7-d437-5951-b139-8b8354a2624e
+		summarizeBy: none
+		sourceColumn: months_inactive_12m
+
+		annotation SummarizationSetBy = User
+
+	column contacts_12m
+		dataType: int64
+		formatString: 0
+		lineageTag: 3f4083ee-9192-5c4b-987b-da1633e52319
+		summarizeBy: none
+		sourceColumn: contacts_12m
+
+		annotation SummarizationSetBy = User
+
+	column credit_limit
+		dataType: double
+		lineageTag: 537a678a-104a-507d-a61c-5315cb4686ad
+		summarizeBy: none
+		sourceColumn: credit_limit
+
+		annotation SummarizationSetBy = User
+
+	partition dim_customer = m
+		mode: import
+		source =
+				let
+				    Source = Csv.Document(File.Contents(DataFolder & "dim_customer.csv"), [Delimiter = ",", Columns = 17, Encoding = 65001, QuoteStyle = QuoteStyle.Csv]),
+				    Promoted = Table.PromoteHeaders(Source, [PromoteAllScalars = true]),
+				    Typed = Table.TransformColumnTypes(Promoted, {{"customer_id", Int64.Type}, {"attrition_flag", type text}, {"card_tier", type text}, {"tenure_band", type text}, {"tier_tenure_cell", type text}, {"cell_customers", Int64.Type}, {"cell_sample_flag", type text}, {"months_on_book", Int64.Type}, {"customer_age", Int64.Type}, {"gender", type text}, {"education_level", type text}, {"marital_status", type text}, {"income_category", type text}, {"relationship_count", Int64.Type}, {"months_inactive_12m", Int64.Type}, {"contacts_12m", Int64.Type}, {"credit_limit", type number}}, "en-US")
+				in
+				    Typed
+
+	annotation PBI_ResultType = Table
