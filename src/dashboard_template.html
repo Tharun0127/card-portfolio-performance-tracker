@@ -1,0 +1,907 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Card Portfolio Performance Tracker</title>
+<style>
+  :root {
+    color-scheme: light;
+    --page: #f9f9f7;
+    --surface: #fcfcfb;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #898781;
+    --grid: #e1e0d9;
+    --axis: #c3c2b7;
+    --border: rgba(11, 11, 11, 0.10);
+    --series-1: #2a78d6;
+    --series-2: #eb6834;
+    --increase: #2a78d6;
+    --decrease: #e34948;
+    --neutral-bar: #898781;
+    --low-n: #e1e0d9;
+    --delta-good: #006300;
+    --delta-bad: #d03b3b;
+    --seq-low: #cde2fb;
+    --seq-mid: #3987e5;
+    --seq-high: #0d366b;
+    --note-bg: #f0efec;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --page: #0d0d0d;
+      --surface: #1a1a19;
+      --text-primary: #ffffff;
+      --text-secondary: #c3c2b7;
+      --text-muted: #898781;
+      --grid: #2c2c2a;
+      --axis: #383835;
+      --border: rgba(255, 255, 255, 0.10);
+      --series-1: #3987e5;
+      --series-2: #d95926;
+      --increase: #3987e5;
+      --decrease: #e66767;
+      --neutral-bar: #898781;
+      --low-n: #2c2c2a;
+      --delta-good: #0ca30c;
+      --delta-bad: #e66767;
+      --seq-low: #0d366b;
+      --seq-mid: #3987e5;
+      --seq-high: #cde2fb;
+      --note-bg: #242422;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --page: #0d0d0d;
+    --surface: #1a1a19;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #898781;
+    --grid: #2c2c2a;
+    --axis: #383835;
+    --border: rgba(255, 255, 255, 0.10);
+    --series-1: #3987e5;
+    --series-2: #d95926;
+    --increase: #3987e5;
+    --decrease: #e66767;
+    --neutral-bar: #898781;
+    --low-n: #2c2c2a;
+    --delta-good: #0ca30c;
+    --delta-bad: #e66767;
+    --seq-low: #0d366b;
+    --seq-mid: #3987e5;
+    --seq-high: #cde2fb;
+    --note-bg: #242422;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--page);
+    color: var(--text-primary);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+  }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 24px 16px 48px; }
+  header h1 { font-size: 22px; font-weight: 650; margin: 0 0 4px; }
+  header p { margin: 0; color: var(--text-secondary); max-width: 78ch; }
+
+  .tabs { display: flex; flex-wrap: wrap; gap: 4px; margin: 20px 0 0; border-bottom: 1px solid var(--grid); }
+  .tabs button {
+    font: inherit; color: var(--text-secondary); background: none; border: 0;
+    border-bottom: 2px solid transparent; padding: 8px 12px; cursor: pointer;
+  }
+  .tabs button[aria-selected="true"] { color: var(--text-primary); border-bottom-color: var(--series-1); font-weight: 600; }
+  .tabs button:focus-visible, .seg button:focus-visible, select:focus-visible { outline: 2px solid var(--series-1); outline-offset: 2px; }
+
+  .filters { display: flex; flex-wrap: wrap; align-items: end; gap: 16px; margin: 16px 0; }
+  .filters label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 4px; }
+  .seg { display: inline-flex; border: 1px solid var(--axis); border-radius: 6px; overflow: hidden; }
+  .seg button {
+    font: inherit; font-size: 14px; color: var(--text-secondary); background: var(--surface);
+    border: 0; padding: 6px 12px; cursor: pointer;
+  }
+  .seg button + button { border-left: 1px solid var(--axis); }
+  .seg button[aria-pressed="true"] { background: var(--text-primary); color: var(--surface); }
+  select {
+    font: inherit; font-size: 14px; color: var(--text-primary); background: var(--surface);
+    border: 1px solid var(--axis); border-radius: 6px; padding: 6px 8px; min-width: 140px;
+  }
+  .filter-note { font-size: 13px; color: var(--text-secondary); max-width: 70ch; }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 16px 16px 12px; margin-bottom: 16px;
+  }
+  .card h2 { font-size: 16px; font-weight: 650; margin: 0 0 2px; }
+  .card .sub { font-size: 13px; color: var(--text-secondary); margin: 0 0 8px; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 820px) { .grid-2 { grid-template-columns: 1fr; } }
+
+  .hero { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 20px; }
+  .hero .figure { font-size: 52px; font-weight: 650; line-height: 1.1; }
+  .hero .statement { font-size: 17px; color: var(--text-secondary); max-width: 62ch; }
+
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 16px; }
+  .tile { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; }
+  .tile .label { font-size: 13px; color: var(--text-secondary); }
+  .tile .value { font-size: 26px; font-weight: 650; line-height: 1.25; }
+  .tile .delta { font-size: 13px; font-weight: 600; }
+  .tile .delta.good { color: var(--delta-good); }
+  .tile .delta.bad { color: var(--delta-bad); }
+  .tile .delta.flat { color: var(--text-muted); }
+  .tile .context { font-size: 12px; color: var(--text-muted); }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 13px; color: var(--text-secondary); margin: 0 0 4px; }
+  .legend span::before {
+    content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 2px;
+    margin-right: 6px; background: var(--swatch);
+  }
+
+  .note {
+    background: var(--note-bg); border-radius: 8px; padding: 10px 12px; font-size: 13px;
+    color: var(--text-secondary); margin: 8px 0;
+  }
+  .note strong { color: var(--text-primary); }
+
+  details { margin-top: 6px; }
+  summary { cursor: pointer; font-size: 13px; color: var(--text-secondary); }
+  .table-scroll { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; margin-top: 8px; }
+  th, td { text-align: left; padding: 5px 10px 5px 0; border-bottom: 1px solid var(--grid); white-space: nowrap; }
+  th { color: var(--text-secondary); font-weight: 600; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+  footer { font-size: 13px; color: var(--text-secondary); margin-top: 24px; max-width: 86ch; }
+  footer h3 { font-size: 14px; color: var(--text-primary); margin: 0 0 4px; }
+  footer ul { margin: 4px 0 0; padding-left: 18px; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Card Portfolio Performance Tracker</h1>
+    <p>Why Q4 card spend differs from Q1, split into customers on book, active rate,
+      transactions per active customer and average ticket. Public Kaggle dataset of
+      <span id="hdr-customers"></span> card customers. Q1 and Q4 levels are estimates
+      derived from 12-month totals and Q4/Q1 ratios, see the notes at the bottom.</p>
+  </header>
+
+  <div class="tabs" role="tablist" aria-label="Dashboard pages">
+    <button role="tab" data-page="overview" aria-selected="true">1. KPI overview</button>
+    <button role="tab" data-page="bridge" aria-selected="false">2. Spend bridge</button>
+    <button role="tab" data-page="heatmap" aria-selected="false">3. Tier x tenure</button>
+    <button role="tab" data-page="attrition" aria-selected="false">4. Attrition lens</button>
+  </div>
+
+  <div class="filters" id="filters">
+    <div id="f-scenario">
+      <label id="lbl-scenario">Scenario</label>
+      <div class="seg" role="group" aria-labelledby="lbl-scenario">
+        <button data-scenario="A" aria-pressed="true">A. As observed</button>
+        <button data-scenario="B" aria-pressed="false">B. Q4 exit run-rate</button>
+      </div>
+    </div>
+    <div id="f-tier">
+      <label for="sel-tier">Card tier</label>
+      <select id="sel-tier"></select>
+    </div>
+    <div id="f-tenure">
+      <label for="sel-tenure">Tenure band (months on book)</label>
+      <select id="sel-tenure"></select>
+    </div>
+    <div class="filter-note" id="filter-note"></div>
+  </div>
+
+  <!-- Page 1 -->
+  <section id="page-overview">
+    <div class="card">
+      <div class="hero">
+        <div class="figure" id="hero-figure"></div>
+        <div class="statement" id="hero-statement"></div>
+      </div>
+    </div>
+    <div class="tiles" id="kpi-tiles"></div>
+    <div class="grid-2">
+      <div class="card">
+        <h2 id="t-factors"></h2>
+        <p class="sub">Change in each factor of the identity, Q1 to Q4</p>
+        <div id="c-factors"></div>
+        <details><summary>Data table</summary><div class="table-scroll" id="tb-factors"></div></details>
+      </div>
+      <div class="card">
+        <h2 id="t-segments"></h2>
+        <p class="sub">Spend change by card tier and by tenure band, Q1 to Q4</p>
+        <div id="c-segments"></div>
+        <details><summary>Data table</summary><div class="table-scroll" id="tb-segments"></div></details>
+      </div>
+    </div>
+  </section>
+
+  <!-- Page 2 -->
+  <section id="page-bridge" hidden>
+    <div class="card">
+      <h2 id="t-bridge"></h2>
+      <p class="sub" id="s-bridge"></p>
+      <div class="legend">
+        <span style="--swatch: var(--neutral-bar)">Quarter total</span>
+        <span style="--swatch: var(--decrease)">Reduces spend</span>
+        <span style="--swatch: var(--increase)">Adds spend</span>
+      </div>
+      <div id="c-bridge"></div>
+      <div class="note" id="n-bridge" hidden></div>
+      <details open><summary>Data table</summary><div class="table-scroll" id="tb-bridge"></div></details>
+    </div>
+  </section>
+
+  <!-- Page 3 -->
+  <section id="page-heatmap" hidden>
+    <div class="card">
+      <h2 id="t-heatmap"></h2>
+      <p class="sub">Spend change Q1 to Q4 and dominant driver per cell. The colour scale is
+        fixed from 0% to 40% decline so small differences are not exaggerated.</p>
+      <div id="c-heatmap"></div>
+      <div class="note">Cells with fewer than <span class="low-n-threshold"></span> customers are
+        shown in grey as "low n, not interpreted". Platinum has
+        <span id="n-platinum"></span> customers and Gold <span id="n-gold"></span> in total,
+        so neither tier supports a conclusion.</div>
+      <details><summary>Data table</summary><div class="table-scroll" id="tb-heatmap"></div></details>
+    </div>
+    <div class="card">
+      <h2 id="t-contrib"></h2>
+      <p class="sub">Interpretable cells only. A cell that explains more of the change than its
+        share of Q1 spend is over-indexing.</p>
+      <div class="legend">
+        <span style="--swatch: var(--series-1)">Share of Q1 spend</span>
+        <span style="--swatch: var(--series-2)">Share of portfolio spend change</span>
+      </div>
+      <div id="c-contrib"></div>
+      <details><summary>Data table</summary><div class="table-scroll" id="tb-contrib"></div></details>
+    </div>
+  </section>
+
+  <!-- Page 4 -->
+  <section id="page-attrition" hidden>
+    <div class="tiles" id="att-tiles"></div>
+    <div class="grid-2">
+      <div class="card">
+        <h2 id="t-att-behaviour"></h2>
+        <p class="sub">Change from Q1 to Q4, as observed</p>
+        <div class="legend">
+          <span style="--swatch: var(--series-1)">Existing customers</span>
+          <span style="--swatch: var(--series-2)">Attrited customers</span>
+        </div>
+        <div id="c-att-behaviour"></div>
+        <details><summary>Data table</summary><div class="table-scroll" id="tb-att-behaviour"></div></details>
+      </div>
+      <div class="card">
+        <h2 id="t-att-rate"></h2>
+        <p class="sub">Share of the Q1 book flagged as attrited</p>
+        <div id="c-att-rate"></div>
+        <details><summary>Data table</summary><div class="table-scroll" id="tb-att-rate"></div></details>
+      </div>
+    </div>
+    <div class="card">
+      <h2 id="t-att-cohort"></h2>
+      <p class="sub">Scenario B read by cohort: what stayers did differently, then what leavers took with them</p>
+      <div class="legend">
+        <span style="--swatch: var(--neutral-bar)">Quarter total</span>
+        <span style="--swatch: var(--decrease)">Reduces spend</span>
+        <span style="--swatch: var(--increase)">Adds spend</span>
+      </div>
+      <div id="c-att-cohort"></div>
+      <div class="note" id="n-att-cohort"></div>
+      <details><summary>Data table</summary><div class="table-scroll" id="tb-att-cohort"></div></details>
+    </div>
+  </section>
+
+  <footer>
+    <h3>How to read this</h3>
+    <ul>
+      <li><strong>Identity.</strong> Spend = customers on book x active rate x transactions per
+        active customer x average ticket. The four effects come from additive LMDI and add up
+        exactly to the spend change.</li>
+      <li><strong>Derived quarters.</strong> The dataset has 12-month totals and Q4/Q1 ratios
+        only. Q1 and Q4 are derived per customer assuming a linear trend across the four
+        quarters. Dollar levels are estimates. Two alternative assumptions move the portfolio
+        change between <span id="ft-sens-low"></span> and <span id="ft-sens-high"></span>
+        (scenario A) and leave the ranking of drivers and segments unchanged.</li>
+      <li><strong>Scenario A</strong> keeps the same customers in both quarters.
+        <strong>Scenario B</strong> removes customers flagged as attrited from the Q4 book.</li>
+      <li><strong>Active</strong> means at least one transaction in the quarter. Every customer
+        in this file transacts at least 10 times a year, so the active rate barely moves.</li>
+      <li><strong>Limits.</strong> One Q1 and one Q4, so seasonality cannot be separated from
+        trend. This is a public teaching dataset and says nothing about any real issuer.</li>
+    </ul>
+  </footer>
+</div>
+
+<script>/*__PLOTLY__*/</script>
+<script>
+const DATA = /*__DATA__*/;
+
+// ---------------------------------------------------------------------------
+// Formatting
+// ---------------------------------------------------------------------------
+const fmtInt = x => Math.round(x).toLocaleString("en-US");
+const fmtMoney = (x, d = 0) => {
+  const r = Number(x.toFixed(d));
+  return (r < 0 ? "-" : "") + "$" + Math.abs(r).toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d });
+};
+const fmtMoneyM = (x, d = 2) => (x < 0 ? "-" : "") + "$" + (Math.abs(x) / 1e6).toFixed(d) + "M";
+const fmtPct = (x, d = 1, signed = false) => {
+  if (x === null || x === undefined || Number.isNaN(x)) return "n/a";
+  let v = Number((x * 100).toFixed(d));
+  if (v === 0) v = 0;
+  return (signed && v > 0 ? "+" : "") + v.toFixed(d) + "%";
+};
+// Compact money for bar labels: $12.74M, -$7.7K, $0
+const fmtMoneyC = x => {
+  const a = Math.abs(x), s = x < 0 ? "-" : "";
+  if (a >= 1e5) return s + "$" + (a / 1e6).toFixed(2) + "M";
+  if (a >= 1e3) return s + "$" + (a / 1e3).toFixed(1) + "K";
+  return s + "$" + Math.round(a);
+};
+const fmtNum = (x, d = 1) => x.toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d });
+const lower = s => s.charAt(0).toLowerCase() + s.slice(1);
+const verb = (x, down = "fell", up = "rose") => (x < 0 ? down : up);
+
+const FACTORS = [
+  { key: "customers", label: "Customers on book" },
+  { key: "active_rate", label: "Active rate" },
+  { key: "txns_per_active", label: "Transactions per active" },
+  { key: "avg_ticket", label: "Average ticket" },
+];
+
+// ---------------------------------------------------------------------------
+// State and lookups
+// ---------------------------------------------------------------------------
+const state = { page: "overview", scenario: "A", tier: "All", tenure: "All" };
+const cellKey = (scenario, tier, tenure) => `${scenario}|${tier}|${tenure}`;
+const getCell = (scenario, tier, tenure) => DATA.cells[cellKey(scenario, tier, tenure)] || null;
+const portfolio = scenario => getCell(scenario, "All", "All");
+const scenarioName = s => DATA.scenarios[s];
+
+function css(name) {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+function theme() {
+  return {
+    surface: css("--surface"), text: css("--text-primary"), text2: css("--text-secondary"),
+    muted: css("--text-muted"), grid: css("--grid"), axis: css("--axis"),
+    s1: css("--series-1"), s2: css("--series-2"), inc: css("--increase"), dec: css("--decrease"),
+    neutral: css("--neutral-bar"), lowN: css("--low-n"),
+    seqLow: css("--seq-low"), seqMid: css("--seq-mid"), seqHigh: css("--seq-high"),
+  };
+}
+function baseLayout(t, extra) {
+  return Object.assign({
+    paper_bgcolor: "rgba(0,0,0,0)", plot_bgcolor: "rgba(0,0,0,0)",
+    font: { family: 'system-ui, -apple-system, "Segoe UI", sans-serif', size: 13, color: t.text2 },
+    margin: { l: 8, r: 8, t: 8, b: 8 }, showlegend: false,
+    hoverlabel: { bgcolor: t.surface, bordercolor: t.axis, font: { color: t.text, size: 13 } },
+  }, extra);
+}
+const CONFIG = { displayModeBar: false, responsive: true };
+const plot = (id, traces, layout) => Plotly.react(id, traces, layout, CONFIG);
+const widthOf = id => document.getElementById(id).clientWidth || 600;
+
+// Bars stay thin: convert a pixel thickness into category-axis units.
+const barUnits = (px, axisPx, slots) => Math.min(0.8, px / (axisPx / slots));
+
+// ---------------------------------------------------------------------------
+// DOM helpers (textContent only, labels come from data)
+// ---------------------------------------------------------------------------
+function el(tag, text, cls) {
+  const node = document.createElement(tag);
+  if (text !== undefined) node.textContent = text;
+  if (cls) node.className = cls;
+  return node;
+}
+function setText(id, text) { document.getElementById(id).textContent = text; }
+function renderTable(id, columns, rows) {
+  const table = el("table");
+  const head = el("tr");
+  columns.forEach(c => head.appendChild(el("th", c.label, c.num ? "num" : "")));
+  table.appendChild(el("thead")).appendChild(head);
+  const body = table.appendChild(el("tbody"));
+  rows.forEach(r => {
+    const tr = el("tr");
+    r.forEach((v, i) => tr.appendChild(el("td", v, columns[i].num ? "num" : "")));
+    body.appendChild(tr);
+  });
+  document.getElementById(id).replaceChildren(table);
+}
+function renderTiles(id, tiles) {
+  const nodes = tiles.map(t => {
+    const tile = el("div", undefined, "tile");
+    tile.appendChild(el("div", t.label, "label"));
+    tile.appendChild(el("div", t.value, "value"));
+    if (t.delta) tile.appendChild(el("div", t.delta, "delta " + (t.tone || "flat")));
+    if (t.context) tile.appendChild(el("div", t.context, "context"));
+    return tile;
+  });
+  document.getElementById(id).replaceChildren(...nodes);
+}
+const arrow = x => (x > 0 ? "▲ " : x < 0 ? "▼ " : "");
+const tone = (x, upIsGood = true) => (Math.abs(x) < 5e-4 ? "flat" : (x > 0) === upIsGood ? "good" : "bad");
+
+// ---------------------------------------------------------------------------
+// Page 1: KPI overview
+// ---------------------------------------------------------------------------
+function renderOverview() {
+  const t = theme();
+  const p = portfolio(state.scenario);
+  const change = p.pct_change;
+
+  setText("hero-figure", fmtPct(change, 1, true));
+  setText("hero-statement",
+    `Q4 spend of ${fmtMoneyM(p.spend_q4)} against ${fmtMoneyM(p.spend_q1)} in Q1, ` +
+    `a change of ${fmtMoneyM(p.delta_spend)}. Scenario ${scenarioName(state.scenario)}.`);
+
+  const rel = (a, b) => b / a - 1;
+  const spc1 = p.spend_q1 / p.customers_q1, spc4 = p.spend_q4 / p.customers_q4;
+  const tiles = [
+    { label: "Spend, Q4", value: fmtMoneyM(p.spend_q4), d: change, context: `Q1: ${fmtMoneyM(p.spend_q1)}` },
+    { label: "Customers on book, Q4", value: fmtInt(p.customers_q4), d: rel(p.customers_q1, p.customers_q4), context: `Q1: ${fmtInt(p.customers_q1)}` },
+    { label: "Active rate, Q4", value: fmtPct(p.active_rate_q4, 2), d: rel(p.active_rate_q1, p.active_rate_q4), dd: 2, context: `Q1: ${fmtPct(p.active_rate_q1, 2)}` },
+    { label: "Transactions per active, Q4", value: fmtNum(p.txns_per_active_q4), d: rel(p.txns_per_active_q1, p.txns_per_active_q4), context: `Q1: ${fmtNum(p.txns_per_active_q1)}` },
+    { label: "Average ticket, Q4", value: fmtMoney(p.avg_ticket_q4, 2), d: rel(p.avg_ticket_q1, p.avg_ticket_q4), context: `Q1: ${fmtMoney(p.avg_ticket_q1, 2)}` },
+    { label: "Spend per customer, Q4", value: fmtMoney(spc4), d: rel(spc1, spc4), context: `Q1: ${fmtMoney(spc1)}` },
+  ].map(k => ({
+    label: k.label, value: k.value, context: k.context,
+    delta: arrow(k.d) + fmtPct(k.d, k.dd || 1, true) + " vs Q1", tone: tone(k.d),
+  }));
+  renderTiles("kpi-tiles", tiles);
+
+  // Factor changes
+  const factorRows = [
+    { label: "Customers on book", q1: p.customers_q1, q4: p.customers_q4, f: fmtInt },
+    { label: "Active rate", q1: p.active_rate_q1, q4: p.active_rate_q4, f: x => fmtPct(x, 2) },
+    { label: "Transactions per active", q1: p.txns_per_active_q1, q4: p.txns_per_active_q4, f: x => fmtNum(x) },
+    { label: "Average ticket", q1: p.avg_ticket_q1, q4: p.avg_ticket_q4, f: x => fmtMoney(x, 2) },
+  ].map(r => Object.assign(r, { change: rel(r.q1, r.q4) }));
+  const biggest = factorRows.reduce((a, b) => (Math.abs(b.change) > Math.abs(a.change) ? b : a));
+  const others = factorRows.filter(r => r !== biggest);
+  const maxOther = Math.max(...others.map(r => Math.abs(r.change)));
+  setText("t-factors",
+    `${biggest.label} ${verb(biggest.change)} ${fmtPct(Math.abs(biggest.change))}; ` +
+    `no other factor moved more than ${fmtPct(maxOther)}`);
+
+  const hF = 210;
+  const rowsF = factorRows.slice().reverse();
+  plot("c-factors", [{
+    type: "bar", orientation: "h",
+    y: rowsF.map(r => r.label), x: rowsF.map(r => r.change * 100),
+    width: barUnits(18, hF - 40, 4),
+    marker: { color: rowsF.map(r => (r.change < 0 ? t.dec : t.inc)), cornerradius: 4 },
+    text: rowsF.map(r => fmtPct(r.change, 1, true)), textposition: "outside", cliponaxis: false,
+    textfont: { color: t.text },
+    customdata: rowsF.map(r => [r.f(r.q1), r.f(r.q4)]),
+    hovertemplate: "<b>%{text}</b><br>%{y}<br>Q1: %{customdata[0]}<br>Q4: %{customdata[1]}<extra></extra>",
+  }], baseLayout(t, {
+    height: hF, margin: { l: 170, r: 56, t: 8, b: 32 },
+    xaxis: { ticksuffix: "%", gridcolor: t.grid, zerolinecolor: t.axis, zerolinewidth: 1, tickfont: { color: t.muted },
+             range: [Math.min(...rowsF.map(r => r.change * 100)) * 1.5 - 4, 16] },
+    yaxis: { tickfont: { color: t.text2 }, automargin: true, ticks: "outside", ticklen: 6, tickcolor: "rgba(0,0,0,0)" },
+  }));
+  renderTable("tb-factors",
+    [{ label: "Factor" }, { label: "Q1", num: true }, { label: "Q4", num: true }, { label: "Change", num: true }],
+    factorRows.map(r => [r.label, r.f(r.q1), r.f(r.q4), fmtPct(r.change, 2, true)]));
+
+  // Segment changes: tiers then tenure bands
+  const seg = [];
+  DATA.tiers.forEach(tier => seg.push(Object.assign({ group: "Tier", name: tier }, getCell(state.scenario, tier, "All"))));
+  DATA.tenures.forEach(b => seg.push(Object.assign({ group: "Tenure", name: b + " months" }, getCell(state.scenario, "All", b))));
+  const solid = seg.filter(s => !s.is_low_n);
+  const lo = Math.max(...solid.map(s => s.pct_change)), hi = Math.min(...solid.map(s => s.pct_change));
+  const allDown = solid.every(s => s.pct_change < 0);
+  setText("t-segments", allDown
+    ? `Every tier and tenure band lost spend, in a narrow range of ${fmtPct(Math.abs(lo))} to ${fmtPct(Math.abs(hi))}`
+    : `Spend change by segment ranges from ${fmtPct(hi, 1, true)} to ${fmtPct(lo, 1, true)}`);
+
+  const hS = 330;
+  const rowsS = seg.slice().reverse();
+  const labelOf = s => `${s.group}: ${s.name}` + (s.is_low_n ? ` (n=${s.customers_q1}, low n)` : "");
+  plot("c-segments", [{
+    type: "bar", orientation: "h",
+    y: rowsS.map(labelOf), x: rowsS.map(s => s.pct_change * 100),
+    width: barUnits(16, hS - 40, rowsS.length),
+    marker: { color: rowsS.map(s => (s.is_low_n ? t.lowN : t.s1)), cornerradius: 4 },
+    text: rowsS.map(s => fmtPct(s.pct_change, 1, true)), textposition: "outside", cliponaxis: false,
+    textfont: { color: t.text },
+    customdata: rowsS.map(s => [fmtInt(s.customers_q1), fmtMoneyM(s.spend_q1), fmtMoneyM(s.spend_q4)]),
+    hovertemplate: "<b>%{text}</b><br>%{y}<br>Customers (Q1): %{customdata[0]}<br>Q1 spend: %{customdata[1]}<br>Q4 spend: %{customdata[2]}<extra></extra>",
+  }], baseLayout(t, {
+    height: hS, margin: { l: 200, r: 24, t: 8, b: 32 },
+    xaxis: { ticksuffix: "%", gridcolor: t.grid, zerolinecolor: t.axis, zerolinewidth: 1, tickfont: { color: t.muted },
+             range: [Math.min(...rowsS.map(s => s.pct_change * 100)) * 1.3, 0] },
+    yaxis: { tickfont: { color: t.text2 }, automargin: true, ticks: "outside", ticklen: 6, tickcolor: "rgba(0,0,0,0)" },
+  }));
+  renderTable("tb-segments",
+    [{ label: "Segment" }, { label: "Customers (Q1)", num: true }, { label: "Q1 spend", num: true },
+     { label: "Q4 spend", num: true }, { label: "Change", num: true }, { label: "Sample" }],
+    seg.map(s => [`${s.group}: ${s.name}`, fmtInt(s.customers_q1), fmtMoneyM(s.spend_q1), fmtMoneyM(s.spend_q4),
+                  fmtPct(s.pct_change, 1, true), s.is_low_n ? "low n, not interpreted" : "ok"]));
+}
+
+// ---------------------------------------------------------------------------
+// Waterfall built from bars with a base, so marks can be styled like every other bar
+// ---------------------------------------------------------------------------
+const maxTopOf = bars => Math.max(...bars.map(b => Math.max(b.base, b.top)));
+function drawWaterfall(id, steps, t, height) {
+  // steps: [{label, value, kind: "total" | "effect", hover}]
+  let running = 0;
+  const bars = steps.map(s => {
+    if (s.kind === "total") { running = s.value; return Object.assign({ base: 0, top: s.value }, s); }
+    const start = running; running += s.value;
+    return Object.assign({ base: start, top: running }, s);
+  });
+  const w = widthOf(id);
+  const width = barUnits(28, w - 90, bars.length);
+  const color = b => (b.kind === "total" ? t.neutral : b.value < 0 ? t.dec : t.inc);
+  const labelText = b => (b.kind === "total" ? fmtMoneyC(b.value) : (b.value > 0 ? "+" : "") + fmtMoneyC(b.value));
+  const unit = maxTopOf(bars) >= 1e6 ? { div: 1e6, suffix: "M" } : { div: 1e3, suffix: "K" };
+  const maxTop = maxTopOf(bars) / unit.div;
+  bars.forEach(b => { b.base /= unit.div; b.top /= unit.div; });
+  const shapes = [];
+  for (let i = 0; i < bars.length - 1; i++) {
+    shapes.push({ type: "line", xref: "x", yref: "y", x0: i + width / 2, x1: i + 1 - width / 2,
+                  y0: bars[i].top, y1: bars[i].top, line: { color: t.axis, width: 1 } });
+  }
+  plot(id, [{
+    type: "bar",
+    x: bars.map((b, i) => i), y: bars.map(b => b.top - b.base), base: bars.map(b => b.base),
+    width, marker: { color: bars.map(color), cornerradius: 4 },
+    customdata: bars.map(b => [b.label, labelText(b), b.hover || ""]),
+    hovertemplate: "<b>%{customdata[1]}</b><br>%{customdata[0]}<br>%{customdata[2]}<extra></extra>",
+  }], baseLayout(t, {
+    height, margin: { l: 56, r: 12, t: 24, b: 56 }, shapes,
+    annotations: bars.map((b, i) => ({
+      x: i, y: Math.max(b.base, b.top), yshift: 10, text: labelText(b), showarrow: false,
+      font: { color: t.text, size: 13 },
+    })),
+    xaxis: { tickmode: "array", tickvals: bars.map((b, i) => i),
+             ticktext: bars.map(b => b.label.replace(/ (?=per |rate|ticket|on book|run-rate|leave)/, "<br>")),
+             tickfont: { color: t.text2 }, range: [-0.6, bars.length - 0.4], fixedrange: true },
+    yaxis: { range: [0, maxTop * 1.12], gridcolor: t.grid, zerolinecolor: t.axis, tickprefix: "$",
+             ticksuffix: unit.suffix, tickformat: "~g", tickfont: { color: t.muted }, fixedrange: true },
+  }));
+}
+
+// ---------------------------------------------------------------------------
+// Page 2: spend bridge
+// ---------------------------------------------------------------------------
+function renderBridge() {
+  const t = theme();
+  const c = getCell(state.scenario, state.tier, state.tenure);
+  const note = document.getElementById("n-bridge");
+  if (!c) {
+    setText("t-bridge", `${state.tier} / ${state.tenure}: no customers in this cell`);
+    setText("s-bridge", "Pick another tier or tenure band.");
+    Plotly.purge("c-bridge");
+    document.getElementById("tb-bridge").replaceChildren();
+    note.hidden = true;
+    return;
+  }
+  const effects = FACTORS.map(f => ({ label: f.label, value: c["effect_" + f.key] }));
+  const dominant = effects.reduce((a, b) => (Math.abs(b.value) > Math.abs(a.value) ? b : a));
+  const opposing = effects.filter(e => e.value * c.delta_spend < 0).sort((a, b) => Math.abs(b.value) - Math.abs(a.value))[0];
+  const dir = c.delta_spend < 0 ? "decline" : "increase";
+
+  if (c.is_low_n) {
+    setText("t-bridge", `${c.segment}: low n (${fmtInt(c.customers_q1)} customers), not interpreted`);
+  } else {
+    let title = `${c.segment} spend ${verb(c.delta_spend)} ${fmtPct(Math.abs(c.pct_change))}: ` +
+      `${lower(dominant.label)} ${dominant.value < 0 ? "removed" : "added"} ${fmtMoneyM(Math.abs(dominant.value))}, ` +
+      `${fmtPct(dominant.value / c.delta_spend, 0)} of the ${dir}`;
+    if (opposing) title += `, partly offset by ${lower(opposing.label)} (${opposing.value > 0 ? "+" : ""}${fmtMoneyM(opposing.value)})`;
+    setText("t-bridge", title);
+  }
+  setText("s-bridge",
+    `Scenario ${scenarioName(state.scenario)}. ${fmtInt(c.customers_q1)} customers on the Q1 book, ` +
+    `${fmtInt(c.customers_q4)} on the Q4 book. Method: ` +
+    (c.decomposition_method === "lmdi" ? "additive LMDI." : "sequential substitution fallback, because a factor is zero in this cell."));
+
+  note.hidden = !c.is_low_n;
+  if (c.is_low_n) {
+    note.textContent = `Fewer than ${DATA.low_n_threshold} customers. The bars add up correctly, ` +
+      `but they describe ${fmtInt(c.customers_q1)} people and should not be read as a pattern.`;
+  }
+
+  const steps = [{ label: "Q1 spend", value: c.spend_q1, kind: "total" }]
+    .concat(effects.map(e => ({
+      label: e.label, value: e.value, kind: "effect",
+      hover: `${fmtPct(e.value / c.delta_spend)} of the spend change`,
+    })))
+    .concat([{ label: "Q4 spend", value: c.spend_q4, kind: "total" }]);
+  drawWaterfall("c-bridge", steps, t, 380);
+
+  const factorValues = {
+    customers: [fmtInt(c.customers_q1), fmtInt(c.customers_q4)],
+    active_rate: [fmtPct(c.active_rate_q1, 2), fmtPct(c.active_rate_q4, 2)],
+    txns_per_active: [fmtNum(c.txns_per_active_q1, 2), fmtNum(c.txns_per_active_q4, 2)],
+    avg_ticket: [fmtMoney(c.avg_ticket_q1, 2), fmtMoney(c.avg_ticket_q4, 2)],
+  };
+  const rows = [["Q1 spend", "", "", fmtMoney(c.spend_q1), "", ""]]
+    .concat(FACTORS.map(f => [f.label, factorValues[f.key][0], factorValues[f.key][1], fmtMoney(c["effect_" + f.key]),
+      c.delta_spend !== 0 ? fmtPct(c["effect_" + f.key] / c.delta_spend) : "n/a",
+      fmtPct(c["effect_" + f.key] / c.spend_q1, 1, true)]))
+    .concat([["Q4 spend", "", "", fmtMoney(c.spend_q4), "", ""],
+             ["Total change", "", "", fmtMoney(c.delta_spend), "100.0%", fmtPct(c.pct_change, 1, true)]]);
+  renderTable("tb-bridge",
+    [{ label: "Step" }, { label: "Factor in Q1", num: true }, { label: "Factor in Q4", num: true },
+     { label: "Amount", num: true }, { label: "Share of change", num: true }, { label: "As % of Q1 spend", num: true }], rows);
+}
+
+// ---------------------------------------------------------------------------
+// Page 3: tier x tenure heatmap and contribution
+// ---------------------------------------------------------------------------
+function luminance(hex) {
+  const v = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16) / 255)
+    .map(c => (c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4)));
+  return 0.2126 * v[0] + 0.7152 * v[1] + 0.0722 * v[2];
+}
+function mix(a, b, w) {
+  const p = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+  const [x, y] = [p(a), p(b)];
+  return "#" + x.map((c, i) => Math.round(c + (y[i] - c) * w).toString(16).padStart(2, "0")).join("");
+}
+function renderHeatmap() {
+  const t = theme();
+  const tiers = DATA.tiers, bands = DATA.tenures;
+  const ZMAX = 40;
+  const scale = z => (z <= ZMAX / 2 ? mix(t.seqLow, t.seqMid, z / (ZMAX / 2)) : mix(t.seqMid, t.seqHigh, (z - ZMAX / 2) / (ZMAX / 2)));
+  const zOk = [], zLow = [], custom = [], annotations = [];
+  const ok = [];
+  tiers.forEach(tier => {
+    const rowOk = [], rowLow = [], rowCustom = [];
+    bands.forEach(b => {
+      const c = getCell(state.scenario, tier, b);
+      if (!c) {
+        rowOk.push(null); rowLow.push(null); rowCustom.push(["No customers", "", "", ""]);
+        annotations.push({ x: b, y: tier, text: "no customers", showarrow: false, font: { color: t.muted, size: 12 } });
+      } else if (c.is_low_n) {
+        rowOk.push(null); rowLow.push(1);
+        rowCustom.push([`${fmtInt(c.customers_q1)} customers`, "low n, not interpreted", fmtPct(c.pct_change, 1, true), c.dominant_driver]);
+        annotations.push({ x: b, y: tier, text: `low n<br>n = ${fmtInt(c.customers_q1)}`, showarrow: false, font: { color: t.text2, size: 12 } });
+      } else {
+        const z = Math.min(ZMAX, Math.max(0, -c.pct_change * 100));
+        ok.push(c);
+        rowOk.push(z); rowLow.push(null);
+        rowCustom.push([`${fmtInt(c.customers_q1)} customers`, fmtPct(c.share_of_portfolio_change) + " of the portfolio change", fmtPct(c.pct_change, 1, true), c.dominant_driver]);
+        const ink = luminance(scale(z)) > 0.4 ? "#0b0b0b" : "#ffffff";
+        annotations.push({ x: b, y: tier, text: `<b>${fmtPct(c.pct_change, 1, true)}</b><br>${c.dominant_driver}`, showarrow: false, font: { color: ink, size: 12 } });
+      }
+    });
+    zOk.push(rowOk); zLow.push(rowLow); custom.push(rowCustom);
+  });
+
+  const lo = Math.max(...ok.map(c => c.pct_change)), hi = Math.min(...ok.map(c => c.pct_change));
+  const counts = {};
+  ok.forEach(c => { counts[c.dominant_driver] = (counts[c.dominant_driver] || 0) + 1; });
+  const topDriver = Object.keys(counts).sort((a, b) => counts[b] - counts[a])[0];
+  setText("t-heatmap",
+    `All ${ok.length} interpretable cells ${verb(lo, "declined", "changed")} between ${fmtPct(Math.abs(lo))} and ${fmtPct(Math.abs(hi))}; ` +
+    `${lower(topDriver)} is the dominant driver in ${counts[topDriver]} of ${ok.length}`);
+
+  const hover = "<b>%{customdata[2]}</b><br>%{y} / %{x} months<br>%{customdata[0]}<br>%{customdata[1]}<br>Dominant driver: %{customdata[3]}<extra></extra>";
+  plot("c-heatmap", [
+    { type: "heatmap", x: bands, y: tiers, z: zOk, zmin: 0, zmax: ZMAX, xgap: 2, ygap: 2, customdata: custom, hovertemplate: hover,
+      colorscale: [[0, t.seqLow], [0.5, t.seqMid], [1, t.seqHigh]],
+      colorbar: { title: { text: "Decline", font: { color: t.text2, size: 12 } }, ticksuffix: "%", thickness: 10, len: 0.9,
+                  tickfont: { color: t.muted }, outlinewidth: 0 } },
+    { type: "heatmap", x: bands, y: tiers, z: zLow, xgap: 2, ygap: 2, showscale: false, customdata: custom,
+      hovertemplate: "<b>%{customdata[1]}</b><br>%{y} / %{x} months<br>%{customdata[0]}<extra></extra>",
+      colorscale: [[0, t.lowN], [1, t.lowN]] },
+  ], baseLayout(t, {
+    height: 330, margin: { l: 80, r: 8, t: 8, b: 48 }, annotations,
+    xaxis: { type: "category", title: { text: "Tenure band (months on book)", font: { color: t.text2, size: 12 } }, tickfont: { color: t.text2 }, fixedrange: true, showgrid: false },
+    yaxis: { type: "category", autorange: "reversed", tickfont: { color: t.text2 }, fixedrange: true, showgrid: false },
+  }));
+
+  const all = [];
+  tiers.forEach(tier => bands.forEach(b => { const c = getCell(state.scenario, tier, b); if (c) all.push(c); }));
+  renderTable("tb-heatmap",
+    [{ label: "Cell" }, { label: "Customers (Q1)", num: true }, { label: "Q1 spend", num: true }, { label: "Change", num: true },
+     { label: "Dominant driver" }, { label: "Method" }, { label: "Sample" }],
+    all.map(c => [c.segment, fmtInt(c.customers_q1), fmtMoney(c.spend_q1), fmtPct(c.pct_change, 1, true), c.dominant_driver,
+                  c.decomposition_method === "lmdi" ? "LMDI" : "sequential fallback", c.is_low_n ? "low n, not interpreted" : "ok"]));
+
+  // Contribution: share of change against share of Q1 spend
+  const ranked = ok.slice().sort((a, b) => Math.abs(b.delta_spend) - Math.abs(a.delta_spend));
+  const top2 = ranked.slice(0, 2);
+  const s2 = top2.reduce((s, c) => s + c.share_of_spend_q1, 0), c2 = top2.reduce((s, c) => s + c.share_of_portfolio_change, 0);
+  const oi = ok.map(c => c.over_index);
+  setText("t-contrib",
+    `${top2.map(c => c.segment).join(" and ")} hold ${fmtPct(s2, 0)} of Q1 spend and explain ${fmtPct(c2, 0)} of the change: ` +
+    `the change tracks segment size (over-index ${fmtNum(Math.min(...oi), 2)} to ${fmtNum(Math.max(...oi), 2)})`);
+  const rows = ranked.slice().reverse();
+  const hC = 56 + rows.length * 46;
+  const bw = barUnits(12, hC - 48, rows.length);
+  const mk = (key, color, name, offset) => ({
+    type: "bar", orientation: "h", name, y: rows.map(c => c.segment), x: rows.map(c => c[key] * 100),
+    width: bw, offset, marker: { color, cornerradius: 4 },
+    customdata: rows.map(c => [fmtPct(c[key]), fmtNum(c.over_index, 2)]),
+    hovertemplate: `<b>%{customdata[0]}</b><br>${name}<br>%{y}<br>Over-index: %{customdata[1]}<extra></extra>`,
+  });
+  const half = bw + 0.04;
+  plot("c-contrib", [mk("share_of_portfolio_change", t.s2, "Share of portfolio spend change", -half),
+                      mk("share_of_spend_q1", t.s1, "Share of Q1 spend", 0.04 / 2)],
+    baseLayout(t, {
+      height: hC, barmode: "overlay", margin: { l: 110, r: 16, t: 8, b: 32 },
+      xaxis: { ticksuffix: "%", gridcolor: t.grid, zerolinecolor: t.axis, tickfont: { color: t.muted }, rangemode: "tozero" },
+      yaxis: { tickfont: { color: t.text2 }, automargin: true, ticks: "outside", ticklen: 6, tickcolor: "rgba(0,0,0,0)" },
+    }));
+  renderTable("tb-contrib",
+    [{ label: "Cell" }, { label: "Share of Q1 spend", num: true }, { label: "Share of portfolio change", num: true },
+     { label: "Over-index", num: true }, { label: "Spend change", num: true }],
+    ranked.map(c => [c.segment, fmtPct(c.share_of_spend_q1), fmtPct(c.share_of_portfolio_change), fmtNum(c.over_index, 2), fmtMoney(c.delta_spend)]));
+}
+
+// ---------------------------------------------------------------------------
+// Page 4: attrition lens (as observed, plus the cohort view of scenario B)
+// ---------------------------------------------------------------------------
+function renderAttrition() {
+  const t = theme();
+  const ex = DATA.attrition.A["Existing Customer"], at = DATA.attrition.A["Attrited Customer"];
+  const pA = portfolio("A"), pB = portfolio("B");
+  const perCust = (c, m, q) => c[m + "_" + q] / c["customers_" + q];
+
+  renderTiles("att-tiles", [
+    { label: "Attrited customers", value: fmtInt(at.customers_q1), context: `${fmtPct(at.customers_q1 / pA.customers_q1)} of the Q1 book` },
+    { label: "Their share of Q1 spend", value: fmtPct(at.spend_q1 / pA.spend_q1), context: `${fmtMoneyM(at.spend_q1)} in Q1` },
+    { label: "Q4 spend that leaves with them", value: fmtMoneyM(at.spend_q4), context: `${fmtPct(at.spend_q4 / pA.spend_q4)} of Q4 spend as observed` },
+    { label: "Q1 spend per customer, attrited", value: fmtMoney(perCust(at, "spend", "q1")),
+      context: `Existing customers: ${fmtMoney(perCust(ex, "spend", "q1"))}` },
+    { label: "Spend change, exit run-rate", value: fmtPct(pB.pct_change, 1, true), context: `As observed: ${fmtPct(pA.pct_change, 1, true)}` },
+  ]);
+
+  // Behaviour change by group
+  const metrics = [
+    { label: "Average ticket", f: c => c.avg_ticket_q4 / c.avg_ticket_q1 - 1, q: (c, q) => fmtMoney(c["avg_ticket_" + q], 2) },
+    { label: "Transactions per customer", f: c => perCust(c, "txns", "q4") / perCust(c, "txns", "q1") - 1, q: (c, q) => fmtNum(perCust(c, "txns", q)) },
+    { label: "Spend per customer", f: c => perCust(c, "spend", "q4") / perCust(c, "spend", "q1") - 1, q: (c, q) => fmtMoney(perCust(c, "spend", q)) },
+  ];
+  const freq = metrics[1];
+  setText("t-att-behaviour",
+    `Attrited customers cut transactions by ${fmtPct(Math.abs(freq.f(at)))}, against ${fmtPct(Math.abs(freq.f(ex)))} for customers who stayed`);
+  const hB = 270;
+  const bw = barUnits(14, hB - 48, metrics.length);
+  const grp = (c, color, name, offset) => ({
+    type: "bar", orientation: "h", name, y: metrics.map(m => m.label), x: metrics.map(m => m.f(c) * 100),
+    width: bw, offset, marker: { color, cornerradius: 4 },
+    text: metrics.map(m => fmtPct(m.f(c), 1, true)), textposition: "outside", cliponaxis: false, textfont: { color: t.text },
+    customdata: metrics.map(m => [m.q(c, "q1"), m.q(c, "q4")]),
+    hovertemplate: `<b>%{text}</b><br>${name}<br>%{y}<br>Q1: %{customdata[0]}<br>Q4: %{customdata[1]}<extra></extra>`,
+  });
+  plot("c-att-behaviour", [grp(at, t.s2, "Attrited customers", -bw - 0.02), grp(ex, t.s1, "Existing customers", 0.02)],
+    baseLayout(t, {
+      height: hB, barmode: "overlay", margin: { l: 170, r: 24, t: 8, b: 32 },
+      xaxis: { ticksuffix: "%", gridcolor: t.grid, zerolinecolor: t.axis, zerolinewidth: 1, tickfont: { color: t.muted }, range: [-60, 45] },
+      yaxis: { tickfont: { color: t.text2 }, automargin: true, ticks: "outside", ticklen: 6, tickcolor: "rgba(0,0,0,0)" },
+    }));
+  renderTable("tb-att-behaviour",
+    [{ label: "Metric" }, { label: "Existing Q1", num: true }, { label: "Existing Q4", num: true }, { label: "Existing change", num: true },
+     { label: "Attrited Q1", num: true }, { label: "Attrited Q4", num: true }, { label: "Attrited change", num: true }],
+    metrics.slice().reverse().map(m => [m.label, m.q(ex, "q1"), m.q(ex, "q4"), fmtPct(m.f(ex), 1, true), m.q(at, "q1"), m.q(at, "q4"), fmtPct(m.f(at), 1, true)]));
+
+  // Attrition rate by segment (scenario B book against the Q1 book)
+  const seg = [];
+  DATA.tiers.forEach(tier => seg.push(Object.assign({ group: "Tier", name: tier }, getCell("B", tier, "All"))));
+  DATA.tenures.forEach(b => seg.push(Object.assign({ group: "Tenure", name: b + " months" }, getCell("B", "All", b))));
+  seg.forEach(s => { s.rate = 1 - s.customers_q4 / s.customers_q1; });
+  const tenureRates = seg.filter(s => s.group === "Tenure").map(s => s.rate);
+  setText("t-att-rate",
+    `Attrition is spread evenly across tenure bands, from ${fmtPct(Math.min(...tenureRates))} to ${fmtPct(Math.max(...tenureRates))}`);
+  const hR = 330;
+  const rowsR = seg.slice().reverse();
+  plot("c-att-rate", [{
+    type: "bar", orientation: "h",
+    y: rowsR.map(s => `${s.group}: ${s.name}` + (s.is_low_n ? ` (n=${s.customers_q1}, low n)` : "")),
+    x: rowsR.map(s => s.rate * 100), width: barUnits(16, hR - 40, rowsR.length),
+    marker: { color: rowsR.map(s => (s.is_low_n ? t.lowN : t.s1)), cornerradius: 4 },
+    text: rowsR.map(s => fmtPct(s.rate)), textposition: "outside", cliponaxis: false, textfont: { color: t.text },
+    customdata: rowsR.map(s => [fmtInt(s.customers_q1), fmtInt(s.customers_q1 - s.customers_q4)]),
+    hovertemplate: "<b>%{text}</b><br>%{y}<br>Customers (Q1): %{customdata[0]}<br>Attrited: %{customdata[1]}<extra></extra>",
+  }], baseLayout(t, {
+    height: hR, margin: { l: 200, r: 40, t: 8, b: 32 },
+    xaxis: { ticksuffix: "%", gridcolor: t.grid, zerolinecolor: t.axis, tickfont: { color: t.muted }, range: [0, 30] },
+    yaxis: { tickfont: { color: t.text2 }, automargin: true, ticks: "outside", ticklen: 6, tickcolor: "rgba(0,0,0,0)" },
+  }));
+  renderTable("tb-att-rate",
+    [{ label: "Segment" }, { label: "Customers (Q1)", num: true }, { label: "Attrited", num: true }, { label: "Attrition rate", num: true }, { label: "Sample" }],
+    seg.map(s => [`${s.group}: ${s.name}`, fmtInt(s.customers_q1), fmtInt(s.customers_q1 - s.customers_q4), fmtPct(s.rate), s.is_low_n ? "low n, not interpreted" : "ok"]));
+
+  // Cohort bridge for scenario B
+  const exB = DATA.attrition.B["Existing Customer"], atB = DATA.attrition.B["Attrited Customer"];
+  const steps = [
+    { label: "Q1 spend", value: pB.spend_q1, kind: "total" },
+    { label: "Stayers: transactions per active", value: exB.effect_txns_per_active, kind: "effect", hover: "Existing customers transacting less often" },
+    { label: "Stayers: average ticket", value: exB.effect_avg_ticket, kind: "effect", hover: "Existing customers spending more per transaction" },
+    { label: "Stayers: active rate", value: exB.effect_active_rate, kind: "effect", hover: "Existing customers with no Q4 transactions" },
+    { label: "Attrited customers leave", value: atB.effect_customers, kind: "effect", hover: "Q1 spend of customers who are off book at Q4 end" },
+    { label: "Q4 exit run-rate", value: pB.spend_q4, kind: "total" },
+  ].filter(s => s.kind === "total" || Math.abs(s.value) >= 0.5);
+  setText("t-att-cohort",
+    `Of the ${fmtMoneyM(Math.abs(pB.delta_spend))} exit run-rate decline, lower spend by customers who stayed accounts for ` +
+    `${fmtMoneyM(Math.abs(exB.delta_spend))} and customers who left for ${fmtMoneyM(Math.abs(atB.delta_spend))}`);
+  drawWaterfall("c-att-cohort", steps, t, 380);
+  document.getElementById("n-att-cohort").textContent =
+    `The portfolio bridge on page 2 puts the customers effect in scenario B at ${fmtMoneyM(pB.effect_customers)}, ` +
+    `more than the ${fmtMoneyM(at.spend_q1)} the attrited customers spent in Q1. That bridge prices every lost customer ` +
+    `at the portfolio average, and attrited customers spent less than average. This cohort view counts what they ` +
+    `actually spent. Both add up to the same total.`;
+  renderTable("tb-att-cohort",
+    [{ label: "Step" }, { label: "Amount", num: true }, { label: "Share of change", num: true }],
+    steps.map(s => [s.label, fmtMoney(s.value), s.kind === "effect" ? fmtPct(s.value / pB.delta_spend) : ""]));
+}
+
+// ---------------------------------------------------------------------------
+// Wiring
+// ---------------------------------------------------------------------------
+const RENDER = { overview: renderOverview, bridge: renderBridge, heatmap: renderHeatmap, attrition: renderAttrition };
+
+function render() {
+  document.querySelectorAll("section[id^='page-']").forEach(s => { s.hidden = s.id !== "page-" + state.page; });
+  document.querySelectorAll(".tabs button").forEach(b => b.setAttribute("aria-selected", String(b.dataset.page === state.page)));
+  document.querySelectorAll(".seg button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.scenario === state.scenario)));
+  document.getElementById("f-scenario").hidden = state.page === "attrition";
+  document.getElementById("f-tier").hidden = state.page !== "bridge";
+  document.getElementById("f-tenure").hidden = state.page !== "bridge";
+  setText("filter-note", state.page === "attrition"
+    ? "This page compares attrited and existing customers as observed, then reads scenario B by cohort. The scenario switch does not apply here."
+    : state.scenario === "A"
+      ? "Same customers on book in both quarters. Shows behaviour change only."
+      : "Customers flagged as attrited are off book at Q4 end. Shows the book carried into next year.");
+  RENDER[state.page]();
+}
+
+function init() {
+  setText("hdr-customers", fmtInt(portfolio("A").customers_q1));
+  document.querySelectorAll(".low-n-threshold").forEach(n => { n.textContent = DATA.low_n_threshold; });
+  setText("n-platinum", fmtInt(getCell("A", "Platinum", "All").customers_q1));
+  setText("n-gold", fmtInt(getCell("A", "Gold", "All").customers_q1));
+  setText("ft-sens-low", DATA.facts.sens_a_pct_change_low);
+  setText("ft-sens-high", DATA.facts.sens_a_pct_change_high);
+
+  const fill = (id, values, allLabel, suffix) => {
+    const sel = document.getElementById(id);
+    [["All", allLabel]].concat(values.map(v => [v, v + suffix])).forEach(([value, label]) => {
+      const o = el("option", label); o.value = value; sel.appendChild(o);
+    });
+  };
+  fill("sel-tier", DATA.tiers, "All tiers", "");
+  fill("sel-tenure", DATA.tenures, "All tenure bands", " months");
+
+  const pages = Object.keys(RENDER);
+  const params = new URLSearchParams(location.search);
+  if (["light", "dark"].includes(params.get("theme"))) document.documentElement.dataset.theme = params.get("theme");
+  const hash = location.hash.replace("#", "");
+  if (pages.includes(hash)) state.page = hash;
+  if (["A", "B"].includes(params.get("scenario"))) state.scenario = params.get("scenario");
+  if (DATA.tiers.includes(params.get("tier"))) state.tier = params.get("tier");
+  if (DATA.tenures.includes(params.get("tenure"))) state.tenure = params.get("tenure");
+  document.getElementById("sel-tier").value = state.tier;
+  document.getElementById("sel-tenure").value = state.tenure;
+
+  document.querySelectorAll(".tabs button").forEach(b => b.addEventListener("click", () => {
+    state.page = b.dataset.page; history.replaceState(null, "", "#" + state.page); render();
+  }));
+  document.querySelectorAll(".seg button").forEach(b => b.addEventListener("click", () => { state.scenario = b.dataset.scenario; render(); }));
+  document.getElementById("sel-tier").addEventListener("change", e => { state.tier = e.target.value; render(); });
+  document.getElementById("sel-tenure").addEventListener("change", e => { state.tenure = e.target.value; render(); });
+  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", render);
+  let resizeTimer;
+  window.addEventListener("resize", () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(render, 150); });
+  render();
+}
+init();
+</script>
+</body>
+</html>
