@@ -1,0 +1,5 @@
+tenure_key,tenure_band,min_months_on_book,max_months_on_book,customers
+1,13-24,13,24,847
+2,25-36,25,36,5418
+3,37-48,37,48,3207
+4,49+,49,56,655
