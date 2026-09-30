@@ -122,7 +122,8 @@ def main() -> None:
         con.close()
 
     report = compare_sql_to_python(sql, build_decomposition())
-    report.to_csv(OUTPUTS_DIR / "sql_vs_python_check.csv", index=False)
+    report.to_csv(OUTPUTS_DIR / "sql_vs_python_check.csv", index=False,
+                  lineterminator="\n")
 
     worst = report.loc[report["max_abs_diff"].idxmax()]
     print(f"  SQL vs Python: {len(sql)} cells, {len(report)} columns, "
