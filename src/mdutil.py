@@ -21,7 +21,8 @@ def fmt_int(x: float) -> str:
 
 def fmt_money(x: float, decimals: int = 0) -> str:
     """$1,234 or -$1,234."""
-    sign = "-" if x < 0 else ""
+    x = round(x, decimals)
+    sign = "-" if x < 0 else ""  # rounding first avoids "-$0"
     return f"{sign}${abs(x):,.{decimals}f}"
 
 
